@@ -30,7 +30,9 @@ def main():
     course_logistics()
     course_components()
 
-    tokenization_unit()
+    tokenization()
+
+    text("Next time: PyTorch building blocks, resource accounting")
 
 
 def welcome():
@@ -482,7 +484,7 @@ GPT2_TOKENIZER_REGEX = \
     r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
 
-def tokenization_unit():
+def tokenization():
     text("This unit was inspired by Andrej Karpathy's video on tokenization; check it out! "), youtube_link("https://www.youtube.com/watch?v=zduSFxRajkE")
 
     intro_to_tokenization()
@@ -492,6 +494,11 @@ def tokenization_unit():
     word_tokenizer()
     bpe_tokenizer()
 
+    text("## Summary")
+    text("- Tokenizer: strings <-> tokens (indices)")
+    text("- Character-based, byte-based, word-based tokenization highly suboptimal")
+    text("- BPE is an effective heuristic that looks at corpus statistics")
+    text("- Tokenization is a necessary evil, maybe one day we'll just do it from bytes...")
 
 @dataclass(frozen=True)
 class BPETokenizerParams:
@@ -662,7 +669,8 @@ def word_tokenizer():
     text("This regular expression keeps all alphanumeric characters together (words).")
 
     text("Here is a fancier version:")
-    segments = regex.findall(GPT2_TOKENIZER_REGEX, string)  # @inspect segments
+    pattern = GPT2_TOKENIZER_REGEX  # @inspect pattern
+    segments = regex.findall(pattern, string)  # @inspect segments
 
     text("To turn this into a `Tokenizer`, we need to map these segments into integers.")
     text("Then, we can build a mapping from each segment into an integer.")
@@ -680,22 +688,19 @@ def word_tokenizer():
 
 def bpe_tokenizer():
     text("## Byte Pair Encoding (BPE)")
-    
-    link("https://en.wikipedia.org/wiki/Byte_pair_encoding")
+    link(title="[Wikipedia]", url="https://en.wikipedia.org/wiki/Byte_pair_encoding")
     text("The BPE algorithm was introduced by Philip Gage in 1994 for data compression. "), article_link("http://www.pennelynn.com/Documents/CUJ/HTML/94HTML/19940045.HTM")
     text("It was adapted to NLP for neural machine translation. "), link(sennrich_2016)
     text("(Previously, papers had been using word-based tokenization.)")
-    text("BPE was then used by the GPT-2 paper (Radford 2019). "), link(gpt2)
+    text("BPE was then used by GPT-2. "), link(gpt2)
 
-    text("The basic idea of BPE is to *train* the tokenizer on raw text to automatically determine the vocabulary.")
+    text("Basic idea: *train* the tokenizer on raw text to automatically determine the vocabulary.")
     text("Intuition: common sequences of characters are represented by a single token, rare sequences are represented by many tokens.")
 
     text("The GPT-2 paper used word-based tokenization to break up the text into inital segments and run the original BPE algorithm on each segment.")
-    text("The basic idea is to start with the byte-based tokenization and perform merges.")
+    text("Sketch: start with each byte as a token, and successively merge the most common pair of adjacent tokens.")
 
-    text("Basic idea: start with each byte as a token, and successively merge the most common pair of adjacent tokens.")
-
-    text("## Building the tokenizer")
+    text("## Training the tokenizer")
     string = "the cat in the hat"  # @inspect string
     params = train_bpe(string, num_merges=3)
 
@@ -710,7 +715,7 @@ def bpe_tokenizer():
     text("In Assignment 1, you will go beyond this in the following ways:")
     text("- encode() currently loops over all merges. Only loop over merges that matter.")
     text("- Detect and preserve special tokens (e.g., <|endoftext|>).")
-    text("- Use pre-tokenization (e.g., the GPT-2 tokenizer regex.")
+    text("- Use pre-tokenization (e.g., the GPT-2 tokenizer regex).")
     text("- Try to make the implementation as fast as possible.")
 
 
