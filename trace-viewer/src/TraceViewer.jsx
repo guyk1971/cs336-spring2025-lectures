@@ -27,9 +27,8 @@ function TraceViewer() {
 
     const fetchData = async () => {
       try {
-        const url = `/${tracePath}`;
+        const url = tracePath;
         const response = await axios.get(url);
-        console.log("SSSSSSSSSSSS", response)
         setTrace(response.data);
         const basePath = tracePath.split('/').pop().replace('.json', '');
         document.title = `Trace - ${basePath}`;
