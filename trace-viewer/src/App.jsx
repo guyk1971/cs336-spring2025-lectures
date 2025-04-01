@@ -4,7 +4,7 @@ import TraceViewer from './TraceViewer';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={process.env.NODE_ENV === 'production' ? '/spring2025-lectures/' : '/'}>
       <Routes>
         <Route path="/" element={<TraceViewer />} />
       </Routes>
