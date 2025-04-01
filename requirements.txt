@@ -1,0 +1,9 @@
+torch
+numpy
+requests
+sqlitedict
+warcio
+markdownify
+tiktoken
+openai
+wandb
