@@ -2,6 +2,7 @@ import regex
 from abc import ABC
 from dataclasses import dataclass
 from collections import defaultdict
+import random
 
 from execute_util import link, image, text
 from lecture_util import article_link, tweet_link, youtube_link
@@ -13,11 +14,11 @@ from references import gpt_3, gpt4, shannon1950, bengio2003, susketver2014, \
     megatron_lm_2019, shazeer_2020, elmo, bert, qwen_2_5, deepseek_r1, moe_2017, \
     rms_norm_2019, rope_2021, soap, gqa, mla, deepseek_67b, deepseek_v2, brants2007, \
     layernorm_2016, pre_post_norm_2020, llama2, llama3, olmo2, \
-    megabyte, byt5, blt, tfree, sennrich_2016
+    megabyte, byt5, blt, tfree, sennrich_2016, zero_2019, gpipe_2018
+from data import get_common_crawl_urls, read_common_crawl, write_documents, markdownify_documents
 from model_util import query_gpt4o
 
 import tiktoken
-
 
 def main():
     welcome()
@@ -67,15 +68,15 @@ def why_this_course_exists():
 
     text("GPT-4 supposedly has 1.8T parameters. "), article_link("https://www.hpcwire.com/2024/03/19/the-generative-ai-future-is-now-nvidias-huang-says")
     text("GPT-4 supposedly cost $100M to train. "), article_link("https://www.wired.com/story/openai-ceo-sam-altman-the-age-of-giant-ai-models-is-already-over/")
-    text("xAI builds cluster with 200,000 H100s. "), article_link("https://www.tomshardware.com/pc-components/gpus/elon-musk-is-doubling-the-worlds-largest-ai-gpu-cluster-expanding-colossus-gpu-cluster-to-200-000-soon-has-floated-300-000-in-the-past")
+    text("xAI builds cluster with 200,000 H100s to train Grok. "), article_link("https://www.tomshardware.com/pc-components/gpus/elon-musk-is-doubling-the-worlds-largest-ai-gpu-cluster-expanding-colossus-gpu-cluster-to-200-000-soon-has-floated-300-000-in-the-past")
     text("Stargate (OpenAI, NVIDIA, Oracle) invests $500B over 4 years. "), article_link("https://openai.com/index/announcing-the-stargate-project/")
 
-    text("Also, no public details on how frontier models are built.")
+    text("Also, there are no public details on how frontier models are built.")
     text("From the GPT-4 technical report "), link(gpt4), text(":")
     image("images/gpt4-no-details.png", width=600)
 
     text("## More is different")
-    text("Frontier models (which currently have the greatest capabilities, scale and cost) are out of reach.")
+    text("Frontier models are out of reach for us.")
     text("But building small language models (<1B parameters in this class) might not be representative of large language models.")
 
     text("Exmaple 1: fraction of FLOPs spent in attention versus MLP changes with scale. "), tweet_link("https://x.com/stephenroller/status/1579993017234382849")
@@ -86,7 +87,7 @@ def why_this_course_exists():
     text("## What can we learn in this class that transfers to frontier models?")
     text("There are three types of knowledge:")
     text("- **Mechanics**: how things work (what a Transformer is, how model parallelism leverages GPUs)")
-    text("- **Mindset**: squeezing performance, thinking about scale (scaling laws)")
+    text("- **Mindset**: squeezing the most out of the hardware, taking scale seriously (scaling laws)")
     text("- **Intuitions**: which data and modeling decisions yield good accuracy")
 
     text("We can teach mechanics and mindset (these do transfer).")
@@ -100,10 +101,8 @@ def why_this_course_exists():
     text("## The bitter lesson")
     text("Wrong interpretation: scale is all that matters, algorithms don't matter.")
     text("Right interpretation: algorithms that scale is what matters.")
-
     text("### accuracy = efficiency x resources")
-
-    text("In fact, efficiency is way more important at scale (can't afford to be wasteful).")
+    text("In fact, efficiency is way more important at larger scale (can't afford to be wasteful).")
     link("https://arxiv.org/abs/2005.04305"), text(" showed 44x algorithmic efficiency on ImageNet between 2012 and 2019")
 
     text("Framing: what is the best model one can build given a certain compute and data budget?")
@@ -116,13 +115,13 @@ def current_landscape():
     text("- Lots of work on n-gram language models (for machine translation, speech recognition) "), link(brants2007)
 
     text("## Neural ingredients (2010s)")
-    text("- First neural language modeling "), link(bengio2003)
+    text("- First neural language model "), link(bengio2003)
     text("- Sequence-to-sequence modeling (for machine translation) "), link(susketver2014)
     text("- Adam optimizer "), link(adam2014)
     text("- Attention mechanism (for machine translation) "), link(bahdanau2015_attention)
     text("- Transformer architecture (for machine translation) "), link(transformer_2017)
     text("- Mixture of experts "), link(moe_2017)
-    text("- Model parallelism "), link(megatron_lm_2019)
+    text("- Model parallelism "), link(gpipe_2018), link(zero_2019), link(megatron_lm_2019)
 
     text("## Early foundation models (late 2010s)")
     text("- ELMo: pretraining with LSTMs, fine-tuning helps tasks "), link(elmo)
@@ -140,7 +139,6 @@ def current_landscape():
     text("- EleutherAI's open datasets (The Pile) and models (GPT-J) "), link(the_pile), link(gpt_j)
     text("- Meta's OPT (175B): GPT-3 replication, lots of hardware issues "), link(opt_175b)
     text("- Hugging Face / BigScience's BLOOM: focused on data sourcing "), link(bloom)
-
     text("- Meta's Llama models "), link(llama), link(llama2), link(llama3)
     text("- Alibaba\'s Qwen models "), link(qwen_2_5)
     text("- DeepSeek\'s models "), link(deepseek_67b), link(deepseek_v2), link(deepseek_v3)
@@ -163,10 +161,7 @@ def current_landscape():
 
 
 def what_is_this_program():
-    text("What on earth am I looking at?")
-
     text("This is an *executable lecture*, a program whose execution delivers the content of a lecture.")
-
     text("Executable lectures make it possible to:")
     text("- view and run code (since everything is code!),")
     total = 0  # @inspect total
@@ -190,11 +185,9 @@ def course_logistics():
     text("- You actually want to get research done this quarter.<br>(Talk to your advisor.)")
     text("- You are interested in learning about the hottest new techniques in AI (e.g., multimodality, RAG, etc.).<br>(You should take a seminar class for that.)")
     text("- You want to get good results on your own application domain.<br>(You should just prompt or fine-tune an existing model.)")
-    text("- You need to build a language model for your own application.<br>(You should fine-tune an existing model using standard packages.)")
 
     text("## How you can follow along at home")
-    text("- There was a lot of interest in the class, so unfortunately we couldn't enroll everyone.")
-    text("- We will make all the assignments and lecture materials available online, so feel free to follow on your own.")
+    text("- All lecture materials and assignments will be posted online, so feel free to follow on your own.")
     text("- Lectures are recorded via GCOE and be made available on YouTube (with some lag).")
     text("- We plan to offer this class again next year.")
 
@@ -203,17 +196,18 @@ def course_logistics():
     text("- No scaffolding code, but we provide unit tests and adapter interfaces to help you check correctness.")
     text("- Implement locally to test for correctness, then run on cluster for benchmarking (accuracy and speed).")
     text("- Leaderboard for some assignments (minimize perplexity given training budget).")
+    text("- AI tools (e.g., CoPilot, Cursor) can take away from learning, so use at your own risk.")
 
     text("## Cluster")
-    text("- Thanks to Together AI for providing compute. 🙏")
+    text("- Thanks to Together AI for providing a compute cluster. 🙏")
     text("- Please read [the guide](https://docs.google.com/document/d/1BSSig7zInyjDKcbNGftVxubiHlwJ-ZqahQewIzBmBOo/edit) on how to use the cluster.")
     text("- Start your assignments early, since the cluster will fill up close to the deadline!")
 
 
 def course_components():
     text("## It's all about efficiency")
-    text("Resources: data + hardware (compute, memory, communication)")
-    text("How do you train the best model given these a fixed set of resources?")
+    text("Resources: data + hardware (compute, memory, communication bandwidth)")
+    text("How do you train the best model given a fixed set of resources?")
     text("Example: given a Common Crawl dump and 32 H100s for 2 weeks, what should you do?")
 
     text("Design decisions:")
@@ -228,7 +222,7 @@ def course_components():
 
     text("## Efficiency drives design decisions")
 
-    text("Today, we are hardware-bound, so design decisions will reflect squeezing the most out of given hardware.")
+    text("Today, we are compute-constrained, so design decisions will reflect squeezing the most out of given hardware.")
     text("- Data processing: avoid wasting precious compute updating on bad / irrelevant data")
     text("- Tokenization: working with raw bytes is elegant, but compute-inefficient with today's model architectures.")
     text("- Model architecture: many changes motivated by reducing memory or FLOPs (e.g., sharing KV caches, sliding window attention)")
@@ -236,7 +230,7 @@ def course_components():
     text("- Scaling laws: use less compute on smaller models to do hyperparameter tuning")
     text("- Alignment: if tune model more to desired use cases, require smaller base models")
 
-    text("Tomorrow, we will become data-bound...")
+    text("Tomorrow, we will become data-constrained...")
 
 
 class Tokenizer(ABC):
@@ -257,10 +251,10 @@ def basics():
     image("images/tokenized-example.png", width=600) 
     text("Intuition: break up string into popular segments")
 
-    text("This course: Byte-Pair Encoding (BPE) tokenizer"), link(sennrich_2016)
+    text("This course: Byte-Pair Encoding (BPE) tokenizer "), link(sennrich_2016)
 
     text("Tokenizer-free approaches: "), link(byt5), link(megabyte), link(blt), link(tfree)
-    text("Use bytes directly, but require architectural changes and have not been scaled up.")
+    text("Use bytes directly, promising, but have not yet been scaled up to the frontier.")
     
     text("## Architecture")
     text("Starting point: original Transformer "), link(transformer_2017)
@@ -284,12 +278,11 @@ def basics():
     text("- Hyperparameters (number of heads, hidden dimension): grid search")
 
     text("## Assignment 1")
-     # TODO: replace with 2025
-    link(title="[GitHub]", url="https://github.com/stanford-cs336/spring2025-assignment1-basics"), link(title="[PDF from 2024]", url="https://github.com/stanford-cs336/spring2024-assignment1-basics/blob/master/cs336_spring2024_assignment1_basics.pdf")
+    link(title="[GitHub]", url="https://github.com/stanford-cs336/spring2025-assignment1-basics"), link(title="[PDF]", url="https://github.com/stanford-cs336/spring2025-assignment1-basics/blob/main/cs336_spring2025_assignment1_basics.pdf")
     text("- Implement BPE tokenizer")
     text("- Implement Transformer, cross-entropy loss, AdamW optimizer, training loop")
     text("- Train on TinyStories and OpenWebText")
-    text("- Leaderboard: minimize OpenWebText perplexity given 90 H100 minutes")
+    text("- Leaderboard: minimize OpenWebText perplexity given 90 minutes on a H100 "), link(title="[last year's leaderboard]", url="https://github.com/stanford-cs336/spring2024-assignment1-basics-leaderboard")
 
 
 def systems():
@@ -301,28 +294,28 @@ def systems():
     image("https://miro.medium.com/v2/resize:fit:2000/format:webp/1*6xoBKi5kL2dZpivFe1-zgw.jpeg", width=800)
     text("Analogy: warehouse : DRAM :: factory : SRAM")
     image("https://horace.io/img/perf_intro/factory_bandwidth.png", width=400)
-    text("Trick: organize computation to (i) maximize utilization and (ii) minimize data movement")
+    text("Trick: organize computation to maximize utilization of GPUs by minimizing data movement")
     text("Write kernels in CUDA/**Triton**/CUTLASS/ThunderKittens")
 
     text("## Parallelism")
     text("What if we have multiple GPUs (8 A100s)?")
     image("https://www.fibermall.com/blog/wp-content/uploads/2024/09/the-hardware-topology-of-a-typical-8xA100-GPU-host.png", width=500)
-    text("Data movement between GPUs is even slower, so same principle holds as for 1 GPU")
+    text("Data movement between GPUs is even slower, but same 'minimize data movement' principle holds")
     text("Use collective operations (e.g., gather, reduce, all-reduce)")
     text("Shard (parameters, activations, gradients, optimizer states) across GPUs")
-    text("How to split computation: data parallelism, tensor parallelism, pipeline parallelism, sequence parallelism")
+    text("How to split computation: {data,tensor,pipeline,sequence} parallelism")
     
     text("## Inference")
     text("Goal: generate tokens given a prompt (needed to actually use models!)")
     text("Inference is also needed for reinforcement learning, test-time compute, evaluation")
-    text("Inference compute (every use) exceeds training compute (one-time cost)")
+    text("Globally, inference compute (every use) exceeds training compute (one-time cost)")
     text("Two phases: prefill and decode")
     image("images/prefill-decode.png", width=500)
     text("Prefill (similar to training): tokens are given, can process all at once (compute-bound)")
     text("Decode: need to generate one token at a time (memory-bound)")
     text("Methods to speed up decoding:")
     text("- Use cheaper model (via model pruning, quantization, distillation)")
-    text("- Speculative decoding: use a cheaper 'draft' model to generate multiple tokens, then use the full model to score in parallel (exact decoding!)")
+    text("- Speculative decoding: use a cheaper \"draft\" model to generate multiple tokens, then use the full model to score in parallel (exact decoding!)")
     text("- Systems optimizations: KV caching, batching")
 
     text("## Assignment 2")
@@ -344,14 +337,14 @@ def scaling_laws():
     text("## Assignment 3")
     link(title="[GitHub from 2024]", url="https://github.com/stanford-cs336/spring2024-assignment3-scaling"), link(title="[PDF from 2024]", url="https://github.com/stanford-cs336/spring2024-assignment3-scaling/blob/master/cs336_spring2024_assignment3_scaling.pdf")
     text("- We define a training API (hyperparameters -> loss) based on previous runs")
-    text("- Submit 'training jobs' (under a FLOPs budget)and gather data points")
+    text("- Submit \"training jobs\" (under a FLOPs budget) and gather data points")
     text("- Fit a scaling law to the data points")
     text("- Submit predictions for scaled up hyperparameters")
     text("- Leaderboard: minimize loss given FLOPs budget")
 
 
 def data():
-    text("What capabilities do we want the model to have?")
+    text("Question: What capabilities do we want the model to have?")
     text("Multilingual? Code? Math?")
     image("https://ar5iv.labs.arxiv.org/html/2101.00027/assets/pile_chart2.png", width=600)
 
@@ -365,6 +358,7 @@ def data():
 
     text("## Data curation")
     text("- Data does not just fall from the sky.")
+    look_at_web_data()
     text("- Sources: webpages crawled from the Internet, books, arXiv papers, GitHub code, etc.")
     text("- Appeal to fair use to train on copyright data? "), link("https://arxiv.org/pdf/2303.15715.pdf")
     text("- Might have to license data (e.g., Google with Reddit data) "), article_link("https://www.reuters.com/technology/reddit-ai-content-licensing-deal-with-google-sources-say-2024-02-22/")
@@ -372,22 +366,33 @@ def data():
 
     text("## Data processing")
     text("- Transformation: convert HTML/PDF to text (preserve content, some structure, rewriting)")
-    text("- Filtering: keep high quality data (classifiers), remove harmful content")
+    text("- Filtering: keep high quality data, remove harmful content (via classifiers)")
     text("- Deduplication: save compute, avoid memorization; use Bloom filters or MinHash")
 
     text("## Assignment 4")
     link(title="[GitHub from 2024]", url="https://github.com/stanford-cs336/spring2024-assignment4-data"), link(title="[PDF from 2024]", url="https://github.com/stanford-cs336/spring2024-assignment4-data/blob/master/cs336_spring2024_assignment4_data.pdf")
     text("- Convert Common Crawl HTML to text")
-    text("- Train filters for quality and harmful content")
+    text("- Train classifiers to filter for quality and harmful content")
     text("- Deduplication using MinHash")
     text("- Leaderboard: minimize perplexity given token budget")
+
+
+def look_at_web_data():
+    urls = get_common_crawl_urls()[:3]  # @inspect urls
+    documents = list(read_common_crawl(urls[1], limit=300))
+    random.seed(40)
+    random.shuffle(documents)
+    documents = markdownify_documents(documents[:10])
+    write_documents(documents, "var/sample-documents.txt")
+    link(title="[sample documents]", url="var/sample-documents.txt")
+    text("It's a wasteland out there!  Need to really process the data.")
 
 
 def alignment():
     text("So far, a **base model** is raw potential, very good at completing the next token.")
     text("Alignment makes the model actually useful.")
 
-    text("Goals of alignment")
+    text("Goals of alignment:")
     text("- Get the language model to follow instructions")
     text("- Tune the style (format, length, tone, etc.)")
     text("- Incorporate safety (e.g., refusals to answer harmful questions)")
@@ -398,7 +403,7 @@ def alignment():
 
     text("## Assignment 5")
     link(title="[GitHub from 2024]", url="https://github.com/stanford-cs336/spring2024-assignment5-alignment"), link(title="[PDF from 2024]", url="https://github.com/stanford-cs336/spring2024-assignment5-alignment/blob/master/cs336_spring2024_assignment5_alignment.pdf")
-    text("- Implement supervised finetuning")
+    text("- Implement supervised fine-tuning")
     text("- Implement Direct Preference Optimization (DPO)")
     text("- Implement Group Relative Preference Optimization (GRPO)")
 
@@ -436,18 +441,16 @@ def supervised_finetuning():
         ),
     ]
     text("Data often involves human annotation.")
-    text("Intuition: base model already has the skills, just need few examples to surface them."), link(lima)
-
-    text("Given (prompt, response) pairs, we perform supervised learning.")
-    text("Specifically, fine-tune `model` to maximize p(response | prompt).")
+    text("Intuition: base model already has the skills, just need few examples to surface them. "), link(lima)
+    text("Supervised learning: fine-tune model to maximize p(response | prompt).")
 
 
 def learning_from_feedback():
-    text("Now we have a preliminary instruction following `model`.")
+    text("Now we have a preliminary instruction following model.")
     text("Let's make it better without expensive annotation.")
     
     text("## Preference data")
-    text("Data: generate multiple responses using `model` (e.g., [A, B]) to a given prompt.")
+    text("Data: generate multiple responses using model (e.g., [A, B]) to a given prompt.")
     text("User provides preferences (e.g., A < B or A > B).")
     preference_data: list[PreferenceExample] = [
         PreferenceExample(
@@ -582,9 +585,8 @@ def tokenization_examples():
     text("To get a feel for how tokenizers work, play with this "), link(title="interactive site", url="https://tiktokenizer.vercel.app/?encoder=gpt2")
 
     text("## Observations")
-    text("- A word and its preceding space are part of the same token (e.g., ' world').")
-    text("- A word at the beginning and in the middle are represented differently (e.g., 'hello hello').")
-    text("- Some long words are one token (e.g., ' SolidGoldMagikarp').")
+    text("- A word and its preceding space are part of the same token (e.g., \" world\").")
+    text("- A word at the beginning and in the middle are represented differently (e.g., \"hello hello\").")
     text("- Numbers are tokenized into every few digits.")
 
     text("Here's the GPT-2 tokenizer from OpenAI (tiktoken) in action.")
@@ -595,6 +597,7 @@ def tokenization_examples():
     indices = tokenizer.encode(string)  # @inspect indices
     reconstructed_string = tokenizer.decode(indices)  # @inspect reconstructed_string
     assert string == reconstructed_string
+    compression_ratio = get_compression_ratio(string, indices)  # @inspect compression_ratio
 
 
 def character_tokenizer():
@@ -711,7 +714,7 @@ def bpe_tokenizer():
     text("- Try to make the implementation as fast as possible.")
 
 
-def train_bpe(string: str, num_merges: int) -> BPETokenizerParams:
+def train_bpe(string: str, num_merges: int) -> BPETokenizerParams:  # @inspect string, @inspect num_merges
     text("Start with the list of bytes of `string`.")
     indices = list(map(int, string.encode("utf-8")))  # @inspect indices
     merges: dict[tuple[int, int], int] = {}  # index1, index2 => merged index
@@ -731,11 +734,7 @@ def train_bpe(string: str, num_merges: int) -> BPETokenizerParams:
         new_index = 256 + i  # @inspect new_index
         merges[pair] = new_index  # @inspect merges
         vocab[new_index] = vocab[index1] + vocab[index2]  # @inspect vocab
-
-        text(f"Merge {vocab[index1]} {vocab[index2]} -> {vocab[new_index]}")
         indices = merge(indices, pair, new_index)  # @inspect indices
-
-        text(f"String: {list(map(vocab.get, indices))}")
 
     return BPETokenizerParams(vocab=vocab, merges=merges)
 

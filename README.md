@@ -8,3 +8,9 @@
 # Compile
 
         python execute.py -m lecture_??.py
+
+# Deploy
+
+        cd trace-viewer
+        npm run build
+        git add dist/assets

@@ -5,7 +5,7 @@ from typing import List, Iterable
 from file_util import download_file
 from markdownify import markdownify
 from gzip import GzipFile
-
+import re
 
 @dataclass(frozen=True)
 class Document:
@@ -43,10 +43,8 @@ def read_common_crawl(url: str, limit: int) -> Iterable[Document]:
             yield Document(url, content)
 
 
-def preprocess(documents: Iterable[Document]) -> Iterable[Document]:
-    for document in documents:
-        markdown = markdownify(document.content)
-        yield Document(url=document.url, content=markdown)
+def preprocess(documents: list[Document]) -> list[Document]:
+    return [Document(url=document.url, content=markdownify(document.content)) for document in documents]
 
 
 def write_documents(documents: Iterable[Document], path: str):
@@ -55,3 +53,13 @@ def write_documents(documents: Iterable[Document], path: str):
             print(f"--- PAGE {i}: url = {document.url}", file=out)
             print(document.content, file=out)
             print("", file=out)
+
+
+def markdownify_documents(documents: Iterable[Document]) -> Iterable[Document]:
+    for document in documents:
+        yield Document(url=document.url, content=postprocess(markdownify(document.content)))
+
+
+def postprocess(markdown: str) -> str:
+    # Remove successive new lines
+    return re.sub(r"\n\n+", "\n\n", markdown)

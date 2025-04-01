@@ -14,6 +14,7 @@ function TraceViewer() {
   const targetLineNumber = parseInt(urlParams.get('line')) || null;  // Line number to highlight
   const targetStepIndex = parseInt(urlParams.get('step')) || null;  // Step index to highlight
   const rawMode = urlParams.get('raw');
+  const animateMode = urlParams.get('animate');
   const navigate = useNavigate();
 
   const [error, setError] = useState(null);
@@ -47,70 +48,37 @@ function TraceViewer() {
     }
 
     const handleKeyDown = (event) => {
-      if (event.altKey) {
+      if (event.altKey) {  // Don't capture alt-right (for web page navigation)
         return;
       }
 
       if (!event.shiftKey && (event.key === 'ArrowRight' || event.key === 'l')) {
-        // Step forward
-        const newStepIndex = currentStepIndex + 1;
-        if (newStepIndex < trace.steps.length) {
-          updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
-        }
-        event.preventDefault();
-        event.stopPropagation();
+        stepForward({trace, currentStepIndex, navigate});
       } else if (!event.shiftKey && (event.key === 'ArrowLeft' || event.key === 'h')) {
-        // Step backward
-        const newStepIndex = currentStepIndex - 1;
-        if (newStepIndex >= 0) {
-          updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
-        }
-        event.preventDefault();
-        event.stopPropagation();
+        stepBackward({currentStepIndex, navigate});
       } else if (event.shiftKey && (event.key === 'ArrowRight' || event.key === 'L')) {
-        // Step forward, but keep in the same stack
-        const newStepIndex = stepOver({trace, currentStepIndex, direction: 1});
-        if (newStepIndex < trace.steps.length) {
-          updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
-        }
-        event.preventDefault();
-        event.stopPropagation();
+        stepOverForward({trace, currentStepIndex, navigate});
       } else if (event.shiftKey && (event.key === 'ArrowLeft' || event.key === 'H')) {
-        // Step backward, but keep in the same stack
-        const newStepIndex = stepOver({trace, currentStepIndex, direction: -1});
-        if (newStepIndex >= 0) {
-          updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
-        }
-        event.preventDefault();
-        event.stopPropagation();
+        stepOverBackward({trace, currentStepIndex, navigate});
       } else if (event.key === 'u') {
-        // Step forward until we're out of this function
-        const newStepIndex = stepUp({trace, currentStepIndex, direction: 1});
-        if (newStepIndex < trace.steps.length) {
-          updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
-        }
-        event.preventDefault();
-        event.stopPropagation();
+        stepUp({trace, currentStepIndex, navigate});
       } else if (event.key === 'R') {
-        // Toggle raw mode
-        const newRawMode = !rawMode;
-        updateUrlParams({ raw: newRawMode ? "1" : null }, navigate);
-        event.preventDefault();
-        event.stopPropagation();
+        toggleRawMode({rawMode, navigate});
+      } else if (event.key === 'A') {
+        toggleAnimateMode({animateMode, navigate});
       } else if (event.key === 'g') {
-        // Go to another trace file
-        const newTracePath = prompt("Enter the path to the trace file", tracePath);
-        if (newTracePath) {
-          updateUrlParams({ trace: newTracePath, source: null, line: null, step: null }, navigate);
-        }
-        event.preventDefault();
-        event.stopPropagation();
+        gotoTrace({tracePath, navigate});
+      } else {
+        return;
       }
+      // Applies to any key event that we've handled
+      event.preventDefault();
+      event.stopPropagation();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [trace, targetStepIndex, targetLineNumber, rawMode, navigate]);
+  }, [trace, targetStepIndex, targetLineNumber, rawMode, animateMode, navigate]);
 
   // Not ready
   if (!tracePath) {
@@ -158,7 +126,7 @@ function TraceViewer() {
   }
 
   const renderedEnv = currentStepIndex !== null ? renderEnv({trace, currentStepIndex}) : null;
-  const renderedLines = renderLines({trace, currentPath, currentLineNumber, currentStepIndex, targetStepIndex, rawMode, navigate});
+  const renderedLines = renderLines({trace, currentPath, currentLineNumber, currentStepIndex, targetStepIndex, rawMode, animateMode, navigate});
 
   return (
     <div className="trace-viewer-container">
@@ -168,7 +136,42 @@ function TraceViewer() {
   );
 }
 
-function stepOver({trace, currentStepIndex, direction}) {
+function stepForward({trace, currentStepIndex, navigate}) {
+  const newStepIndex = currentStepIndex + 1;
+  if (newStepIndex < trace.steps.length) {
+    updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
+  }
+}
+
+function stepBackward({currentStepIndex, navigate}) {
+  const newStepIndex = currentStepIndex - 1;
+  if (newStepIndex >= 0) {
+    updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
+  }
+}
+
+function stepOverForward({trace, currentStepIndex, navigate}) {
+  const newStepIndex = getStepOverIndex({trace, currentStepIndex, direction: 1});
+  if (newStepIndex < trace.steps.length) {
+    updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
+  }
+}
+
+function stepOverBackward({trace, currentStepIndex, navigate}) {
+  const newStepIndex = getStepOverIndex({trace, currentStepIndex, direction: -1});
+  if (newStepIndex >= 0) {
+    updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
+  }
+}
+
+function stepUp({trace, currentStepIndex, navigate}) {
+  const newStepIndex = getStepUpIndex({trace, currentStepIndex, direction: 1});
+  if (newStepIndex < trace.steps.length) {
+    updateUrlParams({ step: newStepIndex, source: null, line: null }, navigate);
+  }
+}
+
+function getStepOverIndex({trace, currentStepIndex, direction}) {
   // Find the first step that is in the same level
   const currentStep = trace.steps[currentStepIndex];
   let stepIndex = currentStepIndex + direction;
@@ -185,7 +188,7 @@ function stepOver({trace, currentStepIndex, direction}) {
   return stepIndex;
 }
 
-function stepUp({trace, currentStepIndex, direction}) {
+function getStepUpIndex({trace, currentStepIndex, direction}) {
   // Find the first step that is in the same level
   const currentStep = trace.steps[currentStepIndex];
   let stepIndex = currentStepIndex + direction;
@@ -214,6 +217,23 @@ function computeLinesToShow({trace, currentStepIndex}) {
     linesToShow[getLocation(path, lineNumber)] = true;
   }
   return linesToShow;
+}
+
+function toggleRawMode({rawMode, navigate}) {
+  const newRawMode = !rawMode;
+  updateUrlParams({ raw: newRawMode ? "1" : null }, navigate);
+}
+
+function toggleAnimateMode({animateMode, navigate}) {
+  const newAnimateMode = !animateMode;
+  updateUrlParams({ animate: newAnimateMode ? "1" : null }, navigate);
+}
+
+function gotoTrace({tracePath, navigate}) {
+  const newTracePath = prompt("Enter the path to the trace file", tracePath);
+  if (newTracePath) {
+    updateUrlParams({ trace: newTracePath, source: null, line: null, step: null }, navigate);
+  }
 }
 
 /**
@@ -251,8 +271,11 @@ function renderEnv({trace, currentStepIndex}) {
     Object.assign(env, stepEnv);
   }
 
-  // Create a table mapping variable names to values
+  if (Object.keys(env).length === 0) {
+    return null;
+  }
 
+  // Create a table mapping variable names to values
   const renderedEnv = Object.entries(env).map(([key, value]) => {
     return (
       <tr key={key}>
@@ -315,7 +338,7 @@ function makeProgressBar(currentStepIndex, totalSteps) {
   );
 }
 
-function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, targetStepIndex, rawMode, navigate}) {
+function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, targetStepIndex, rawMode, animateMode, navigate}) {
   const linesToShow = computeLinesToShow({trace, currentStepIndex});
 
   // Build a map of line number to renderings
@@ -351,7 +374,7 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
           {renderRendering(rendering, navigate)}
         </span>;
       });
-      renderedItems.push(<div style={{ display: 'inline-block', width: '800px'}}>{renderedRenderings}</div>);
+      renderedItems.push(<div key="renderings" style={{ display: 'inline-block', width: '800px'}}>{renderedRenderings}</div>);
     } else {
       // Note: line is HTML for syntax highlighting
       renderedItems.push(<span key="code" className="code-container" dangerouslySetInnerHTML={{ __html: line }} />);
@@ -377,7 +400,7 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
       lineClass.push("current-line");
     }
     const location = getLocation(currentPath, lineNumber);
-    if (targetStepIndex !== null && !linesToShow[location]) {
+    if (currentStepIndex !== null && animateMode && !linesToShow[location]) {
       lineClass.push("cloaked");
     }
 
@@ -389,10 +412,30 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
     );
   });
 
+  const animateIcon = animateMode ? "⛅️" : "☀️";
+  const rawIcon = rawMode ? "⚙️" : "⚪️";
+  const stepBackwardIcon = "⬅️";
+  const stepForwardIcon = "➡️";
+  const stepOverBackwardIcon = "↖️";
+  const stepOverForwardIcon = "↗️";
+  const stepUpIcon = "⤴️";
+  const buttons = (
+    <span className="icon-buttons">
+      <button title="Toggle animation (whether to gradually show content when stepping through) [shortcut: A]" onClick={() => toggleAnimateMode({animateMode, navigate})}>{animateIcon}</button>
+      <button title="Toggle raw mode (whether to show the underlying code) [shortcut: R]" onClick={() => toggleRawMode({rawMode, navigate})}>{rawIcon}</button>
+      <button title="Step backward (into functions if necessary) [shortcut: h or left]" onClick={() => stepBackward({currentStepIndex, navigate})}>{stepBackwardIcon}</button>
+      <button title="Step forward (into functions if necessary) [shortcut: l or right]" onClick={() => stepForward({trace, currentStepIndex, navigate})}>{stepForwardIcon}</button>
+      <button title="Step over backward (stay at this level of the stack) [shortcut: H or shift-left]" onClick={() => stepOverBackward({trace, currentStepIndex, navigate})}>{stepOverBackwardIcon}</button>
+      <button title="Step over forward (stay at this level of the stack) [shortcut: L or shift-right]" onClick={() => stepOverForward({trace, currentStepIndex, navigate})}>{stepOverForwardIcon}</button>
+      <button title="Step forward until we're out of this function [shortcut: u]" onClick={() => stepUp({trace, currentStepIndex, navigate})}>{stepUpIcon}</button>
+    </span>
+  )
+
   const header = (
     <div className="header">
       <div className="header-title">
         <span>{currentPath}</span>
+        {buttons}
       </div>
       {makeProgressBar(currentStepIndex, trace.steps.length)}
     </div>
@@ -442,14 +485,17 @@ function scrollIntoViewIfNeeded(el) {
   }
   const rect = el.getBoundingClientRect();
   const padding = 50;
-  const isInView = (
-    rect.top >= padding &&
-    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - padding
-  );
+  const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+  const isInView = rect.top >= padding && rect.bottom <= windowHeight - padding;
+
+  // How much do we have to scroll to get the element into view?
+  // If it's not too much, the do smooth scrolling, otherwise do instant scrolling (so it doesn't take too long)
+  const scrollDistance = Math.min(Math.abs(rect.top - 0), Math.abs(rect.bottom - windowHeight));
+  const behavior = scrollDistance <= 100 ? 'smooth' : 'instant';
   
   // Only scroll if element is not in view
   if (!isInView) {
-    el.scrollIntoView({ behavior: 'instant', block: 'center' });
+    el.scrollIntoView({behavior, block: 'center'});
   }
 }
 
@@ -486,6 +532,8 @@ function ExternalLink({ link, style }) {
 
   const notes = link.notes && link.notes.split(/\n/).map((line, index) => <div key={index}>{line}</div>);
 
+  const org = link.organization && `[${link.organization}] `;
+
   return (
     <div className="link-container" style={{ display: 'inline-block', position: 'relative' }}>
       <a 
@@ -498,7 +546,7 @@ function ExternalLink({ link, style }) {
       </a>
       <div className="link-hover-panel">
         {link.title && <div className="link-title">{link.title}</div>}
-        {link.authors && <div className="link-authors">{renderAuthors(link.authors)}</div>}
+        {link.authors && <div className="link-authors">{org}{renderAuthors(link.authors)}</div>}
         {link.date && <div className="link-date">{renderDate(link.date)}</div>}
         {link.description && <div className="link-description">{link.description}</div>}
         {link.notes && <div className="link-notes">{notes}</div>}

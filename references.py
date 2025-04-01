@@ -10,6 +10,7 @@ shannon1950 = Reference(
 brants2007 = Reference(
     title="Language Models in Machine Translation", date="2007",
     authors=["Thorsten Brants", "Ashok C. Popat", "Peng Xu", "Franz J. Och", "Jeffrey Dean"],
+    organization="Google",
     url="https://aclanthology.org/D07-1090.pdf",
     notes=join(
         "Trained 5-gram model on 2T tokens"
@@ -20,15 +21,16 @@ bengio2003 = Reference(
     title="A Neural Probabilistic Language Model", date="2003-02-01",
     authors=["Yoshua Bengio", "Rejean Ducharme", "Pascal Vincent", "Christian Jauvin"],
     url="https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf",
+    notes="Used a feedforward neural network over last n words to predict the next word in a sequence"
 )
 
-susketver2014 = arxiv_reference("https://arxiv.org/pdf/1409.3215.pdf", notes="Introduced seq2seq")
+susketver2014 = arxiv_reference("https://arxiv.org/pdf/1409.3215.pdf", organization="Google", notes="Introduced seq2seq (encode entire sentence into one vector, decode translation)")
 
 adam2014 = arxiv_reference("https://arxiv.org/pdf/1412.6980.pdf", notes="Introduced Adam optimizer based on RMSProp and momentum")
 
 bahdanau2015_attention = arxiv_reference("https://arxiv.org/pdf/1409.0473.pdf", notes="Introduced attention mechanism (for machine translation)")
 
-transformer_2017 = arxiv_reference("https://arxiv.org/pdf/1706.03762.pdf", notes="Introduced Transformer (for machine translation)")
+transformer_2017 = arxiv_reference("https://arxiv.org/pdf/1706.03762.pdf", organization="Google", notes="Introduced Transformer (for machine translation)")
 
 layernorm_2016 = arxiv_reference("https://arxiv.org/pdf/1607.06450.pdf", notes="Introduced LayerNorm")
 
@@ -67,8 +69,8 @@ cosine_learning_rate_2017 = arxiv_reference("https://arxiv.org/pdf/1608.03983.pd
 moe_2017 = arxiv_reference("https://arxiv.org/pdf/1701.06538.pdf", organization="Google")
 
 gpipe_2018 = arxiv_reference("https://arxiv.org/pdf/1811.06965.pdf", organization="Google")
-
 megatron_lm_2019 = arxiv_reference("https://arxiv.org/pdf/1909.08053.pdf", organization="NVIDIA")
+zero_2019 = arxiv_reference("https://arxiv.org/abs/1910.02054", organization="Microsoft", notes="Introduced ZeRO optimizer, can train 100B parameter model over 400 GPUs")
 
 rms_norm_2019 = arxiv_reference("https://arxiv.org/abs/1910.07467")
 
