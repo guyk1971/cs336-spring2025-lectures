@@ -280,7 +280,7 @@ def basics():
     text("- Hyperparameters (number of heads, hidden dimension): grid search")
 
     text("## Assignment 1")
-    link(title="[GitHub]", url="https://github.com/stanford-cs336/spring2025-assignment1-basics"), link(title="[PDF]", url="https://github.com/stanford-cs336/spring2025-assignment1-basics/blob/main/cs336_spring2025_assignment1_basics.pdf")
+    link(title="[GitHub]", url="https://github.com/stanford-cs336/assignment1-basics"), link(title="[PDF]", url="https://github.com/stanford-cs336/assignment1-basics/blob/main/cs336_spring2025_assignment1_basics.pdf")
     text("- Implement BPE tokenizer")
     text("- Implement Transformer, cross-entropy loss, AdamW optimizer, training loop")
     text("- Train on TinyStories and OpenWebText")
