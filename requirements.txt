@@ -7,3 +7,6 @@ markdownify
 tiktoken
 openai
 wandb
+einops
+jaxtyping
+readable-number

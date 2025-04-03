@@ -281,7 +281,7 @@ function renderEnv({trace, currentStepIndex}) {
       <tr key={key}>
         <td className="code-container key">{key}</td>
         <td className="code-container">=</td>
-        <td className="code-container">{renderValues(value)}</td>
+        <td className="code-container">{renderValue(value)}</td>
       </tr>
     );
   });
@@ -314,7 +314,15 @@ function isStrictAncestorOf(stack1, stack2) {
   return stack1.length < stack2.length;
 }
 
-function renderValues(value) {
+function renderValue(value) {
+  if (typeof value === "number") {
+    if (value > 1e9) {
+      // Use scientific notation
+      return value.toExponential(3);
+    } else {
+      return value.toLocaleString();
+    }
+  }
   return JSON.stringify(value, null, 2);
 }
 
@@ -374,7 +382,7 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
           {renderRendering(rendering, navigate)}
         </span>;
       });
-      renderedItems.push(<div key="renderings" style={{ display: 'inline-block', width: '800px'}}>{renderedRenderings}</div>);
+      renderedItems.push(<div key="renderings" className="renderings">{renderedRenderings}</div>);
     } else {
       // Note: line is HTML for syntax highlighting
       renderedItems.push(<span key="code" className="code-container" dangerouslySetInnerHTML={{ __html: line }} />);

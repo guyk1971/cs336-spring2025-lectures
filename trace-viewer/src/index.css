@@ -165,6 +165,12 @@ body {
   flex: 1;
   position: relative;
   min-width: 1000px;
+  overflow-x: auto;
+}
+
+.renderings {
+  display: inline-block;
+  width: 800px;
 }
 
 .env-panel {
