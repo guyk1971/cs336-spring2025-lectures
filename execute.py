@@ -91,7 +91,7 @@ def get_inspect_variables(code: str) -> list[str]:
     return variables
 
 
-def execute(module_name: str) -> Trace:
+def execute(module_name: str, inspect_all_variables: bool) -> Trace:
     """
     Execute the module and return a trace of the execution.
     """
@@ -186,7 +186,11 @@ def execute(module_name: str) -> Trace:
 
             # Update the environment with the actual values
             locals = frame.f_locals
-            for var in get_inspect_variables(item.code):
+            if inspect_all_variables:
+                vars = locals.keys()
+            else:
+                vars = get_inspect_variables(item.code)
+            for var in vars:
                 if var in locals:
                     close_step.env[var] = to_serializable_value(locals[var])
                 else:
@@ -229,6 +233,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--module", help="List of modules to execute (e.g., lecture_01)", type=str, nargs="+")
     parser.add_argument("-o", "--output_path", help="Path to save the trace", type=str, default="var/traces")
+    parser.add_argument("-I", "--inspect-all-variables", help="Inspect all variables (default: only inspect variables mentioned in @inspect comments)", action="store_true")
     args = parser.parse_args()
 
     ensure_directory_exists(args.output_path)
@@ -236,7 +241,7 @@ if __name__ == "__main__":
     for module in args.module:
         module = module.replace(".py", "")  # Just in case
         print(f"Executing {module}...")
-        trace = execute(module)
+        trace = execute(module_name=module, inspect_all_variables=args.inspect_all_variables)
         print(f"{len(trace.steps)} steps")
         output_path = os.path.join(args.output_path, f"{module}.json")
         print(f"Saving trace to {output_path}...")
