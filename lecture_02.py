@@ -262,7 +262,7 @@ def tensors_on_gpus():
     assert y.device == torch.device("cuda", 0)
 
     text("Create a tensor directly on the GPU:")
-    z = torch.zeros(32, 32, device="cuda:0")  # @inspect z
+    z = torch.zeros(4, 8, device="cuda:0")  # @inspect z
 
     new_memory_allocated = torch.cuda.memory_allocated()  # @inspect new_memory_allocated
     text(f"GPU memory used (for y and z): {new_memory_allocated}")
