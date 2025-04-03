@@ -3,7 +3,6 @@ from facts import a100_flop_per_sec, h100_flop_per_sec
 import torch.nn.functional as F
 import timeit
 import torch
-import wandb
 from typing import Iterable
 from torch import nn
 import numpy as np
@@ -241,11 +240,11 @@ def tensors_memory():
 
 def tensors_on_gpus():
     text("By default, tensors are stored in CPU memory.")
-    x = torch.zeros(4, 8)
+    x = torch.zeros(32, 32)
     assert x.device == torch.device("cpu")
 
     text("However, in order to take advantage of the massive parallelism of GPUs, we need to move them to GPU memory.")
-    image("https://www.researchgate.net/publication/338984158/figure/fig2/AS:854027243900928@1580627370716/Communication-between-host-CPU-and-GPU.png", width=400)
+    image("images/cpu-gpu.png", width=400)
 
     text("Let's first see if we have any GPUs.")
     if not torch.cuda.is_available():
@@ -261,12 +260,11 @@ def tensors_on_gpus():
     y = x.to("cuda:0")  # @inspect y
     assert y.device == torch.device("cuda", 0)
 
+    new_memory_allocated = torch.cuda.memory_allocated()  # @inspect new_memory_allocated
+    memory_used = new_memory_allocated - memory_allocated  # @inspect memory_used
+
     text("Create a tensor directly on the GPU:")
     z = torch.zeros(4, 8, device="cuda:0")  # @inspect z
-
-    new_memory_allocated = torch.cuda.memory_allocated()  # @inspect new_memory_allocated
-    text(f"GPU memory used (for y and z): {new_memory_allocated}")
-    assert new_memory_allocated - memory_allocated == 2 * (4 * 8 * 4)
 
 
 def tensor_operations():
@@ -903,8 +901,6 @@ def train_loop():
 def train(name: str, get_batch,
           D: int, num_layers: int,
           B: int, num_train_steps: int, lr: float):
-    wandb.init(project=f"lecture2-train-{name}")
-
     model = Cruncher(dim=D, num_layers=0).to(get_device())
     optimizer = SGD(model.parameters(), lr=0.01)
 
@@ -915,7 +911,6 @@ def train(name: str, get_batch,
         # Forward (compute loss)
         pred_y = model(x)
         loss = F.mse_loss(pred_y, y)
-        wandb.log({"loss": loss.item()})
 
         # Backward (compute gradients)
         loss.backward()
