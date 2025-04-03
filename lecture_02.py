@@ -894,10 +894,10 @@ def train_loop():
         return (x, true_y)
 
     text("Let's do a basic run")
-    train("simple", get_batch, D=D, num_layers=0, B=4, num_train_steps=100, lr=0.01)
+    train("simple", get_batch, D=D, num_layers=0, B=4, num_train_steps=10, lr=0.01)
 
     text("Do some hyperparameter tuning")
-    train("simple", get_batch, D=D, num_layers=0, B=4, num_train_steps=100, lr=0.1)
+    train("simple", get_batch, D=D, num_layers=0, B=4, num_train_steps=10, lr=0.1)
 
 
 def train(name: str, get_batch,
