@@ -113,7 +113,6 @@ def tensors_memory():
     text("Memory is determined by the (i) number of values and (ii) data type of each value.")
     x = torch.zeros(4, 8)  # @inspect x
     assert x.dtype == torch.float32  # Default type
-    assert x.size() == torch.Size([4, 8])
     assert x.numel() == 4 * 8
     assert x.element_size() == 4  # Float is 4 bytes
     assert get_memory_usage(x) == 4 * 8 * 4  # 128 bytes
@@ -601,7 +600,7 @@ def module_parameters():
     text("Up to a constant, this is Xavier initialization. "), link(title="[paper]", url="https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf"), link(title="[stackexchange]", url="https://ai.stackexchange.com/questions/30491/is-there-a-proper-initialization-technique-for-the-weight-matrices-in-multi-head")
 
     text("To be extra safe, we truncate the normal distribution to [-3, 3] to avoid any chance of outliers.")
-    w = nn.Parameter(nn.init.trunc_normal_(torch.empty(input_dim, output_dim), std=1 / np.sqrt(input_dim), a=-3, b=3))  # @inspect w
+    w = nn.Parameter(nn.init.trunc_normal_(torch.empty(input_dim, output_dim), std=1 / np.sqrt(input_dim), a=-3, b=3))
 
 
 def custom_model():
