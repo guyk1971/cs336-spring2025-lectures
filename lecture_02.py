@@ -12,7 +12,7 @@ from einops import rearrange, einsum, reduce
 
 
 def main():
-    text("Last lecture: overiew, tokenization")
+    text("Last lecture: overview, tokenization")
 
     text("Overview of this lecture:")
     text("- We will discuss all the **primitives** needed to train a model.")
@@ -136,7 +136,7 @@ def tensors_memory():
     text("## bfloat16")
     link(title="[Wikipedia]", url="https://en.wikipedia.org/wiki/Bfloat16_floating-point_format")
     image("images/bf16.png", width=400)
-    text("Google Brian developed bfloat (brain floating point) in 2018 to address this issue.")
+    text("Google Brain developed bfloat (brain floating point) in 2018 to address this issue.")
     text("bfloat16 uses the same memory as float16 but has the same dynamic range as float32!")
     text("The only catch is that the resolution is worse, but this matters less for deep learning.")
     x = torch.tensor([1e-8], dtype=torch.bfloat16)  # @inspect x
@@ -444,7 +444,7 @@ def tensor_operations_flops():
     text("- B is the number of data points")
     text("- (D K) is the number of parameters")
     text("- FLOPs for forward pass is 2 (# tokens) (# parameters)")
-    text("It turns out this generalizes to Transformers.")
+    text("It turns out this generalizes to Transformers (to a first-order approximation).")
 
     text("How do our FLOPs calculations translate to wall-clock time (seconds)?")
     text("Let us time it!")
@@ -554,7 +554,7 @@ def gradients_flops():
     text("For each (i, j, k), multiply and add.")
     num_backward_flops += 2 * B * D * K  # @inspect num_backward_flops
 
-    text("h1.grad[i,j] = sum_k w2[i,j] * h2[i,k]")
+    text("h1.grad[i,j] = sum_k w2[i,j] * h2.grad[i,k]")
     assert h1.grad.size() == torch.Size([B, D])
     assert w2.size() == torch.Size([D, K])
     assert h2.grad.size() == torch.Size([B, K])
@@ -576,10 +576,10 @@ def gradients_flops():
 
 def module_parameters():
     input_dim = 16384
-    hidden_dim = 32
+    output_dim = 32
 
     text("Model parameters are stored in PyTorch as `nn.Parameter` objects.")
-    w = nn.Parameter(torch.randn(input_dim, hidden_dim))
+    w = nn.Parameter(torch.randn(input_dim, output_dim))
     assert isinstance(w, torch.Tensor)  # Behaves like a tensor
     assert type(w.data) == torch.Tensor  # Access the underlying tensor
 
@@ -588,20 +588,20 @@ def module_parameters():
     text("Let's see what happens.")
     x = nn.Parameter(torch.randn(input_dim))
     output = x @ w  # @inspect output
-    assert output.size() == torch.Size([hidden_dim])
-    text(f"Note that each element of `output` scales as sqrt(num_inputs): {output[0]}.")
+    assert output.size() == torch.Size([output_dim])
+    text(f"Note that each element of `output` scales as sqrt(input_dim): {output[0]}.")
     text("Large values can cause gradients to blow up and cause training to be unstable.")
 
-    text("We want an initialization that is invariant to `hidden_dim`.")
-    text("To do that, we simply rescale by 1/sqrt(num_inputs)")
-    w = nn.Parameter(torch.randn(input_dim, hidden_dim) / np.sqrt(input_dim))
+    text("We want an initialization that is invariant to `input_dim`.")
+    text("To do that, we simply rescale by 1/sqrt(input_dim)")
+    w = nn.Parameter(torch.randn(input_dim, output_dim) / np.sqrt(input_dim))
     output = x @ w  # @inspect output
     text(f"Now each element of `output` is constant: {output[0]}.")
 
     text("Up to a constant, this is Xavier initialization. "), link(title="[paper]", url="https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf"), link(title="[stackexchange]", url="https://ai.stackexchange.com/questions/30491/is-there-a-proper-initialization-technique-for-the-weight-matrices-in-multi-head")
 
-    text("To be extra safe, we truncate the normal distribution to [-3, 3].")
-    w = nn.Parameter(nn.init.trunc_normal_(torch.empty(input_dim, hidden_dim), std=1 / np.sqrt(input_dim), a=-3, b=3))  # @inspect w
+    text("To be extra safe, we truncate the normal distribution to [-3, 3] to avoid any chance of outliers.")
+    w = nn.Parameter(nn.init.trunc_normal_(torch.empty(input_dim, output_dim), std=1 / np.sqrt(input_dim), a=-3, b=3))  # @inspect w
 
 
 def custom_model():
@@ -966,7 +966,7 @@ def time_matmul(a: torch.Tensor, b: torch.Tensor) -> float:
         if torch.cuda.is_available():
             torch.cuda.synchronize()
 
-    # Time the operation times
+    # Time the operation `num_trials` times
     num_trials = 5
     total_time = timeit.timeit(run, number=num_trials)
 
