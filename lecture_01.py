@@ -190,7 +190,7 @@ def course_logistics():
 
     text("## How you can follow along at home")
     text("- All lecture materials and assignments will be posted online, so feel free to follow on your own.")
-    text("- Lectures are recorded via GCOE and be made available on YouTube (with some lag).")
+    text("- Lectures are recorded via [CGOE, formally SCPD](https://cgoe.stanford.edu/) and be made available on YouTube (with some lag).")
     text("- We plan to offer this class again next year.")
 
     text("## Assignments")
