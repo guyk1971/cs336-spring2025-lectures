@@ -85,7 +85,7 @@ def motivating_questions():
 
 def tensors_basics():
     text("Tensors are the basic building block for storing everything: parameters, gradients, optimizer state, data, activations.")
-    link("[PyTorch docs on tensors]", url="https://pytorch.org/docs/stable/tensors.html")
+    link(title="[PyTorch docs on tensors]", url="https://pytorch.org/docs/stable/tensors.html")
 
     text("You can create tensors in multiple ways:")
     x = torch.tensor([[1., 2, 3], [4, 5, 6]])  # @inspect x
