@@ -9,6 +9,7 @@ import numpy as np
 from lecture_util import article_link
 from jaxtyping import Float
 from einops import rearrange, einsum, reduce
+from references import zero_2019
 
 
 def main():
@@ -78,7 +79,8 @@ def motivating_questions():
     h100_bytes = 80e9  # @inspect h100_bytes
     bytes_per_parameter = 4 + 4 + (4 + 4)  # parameters, gradients, optimizer state  @inspect bytes_per_parameter
     num_parameters = (h100_bytes * 8) / bytes_per_parameter  # @inspect num_parameters
-    text("Caveat: activations are not accounted for (depends on batch size and sequence length).")
+    text("Caveat 1: we are naively using float32 for parameters and gradients.  We could also use bf16 for parameters and gradients (2 + 2) and keep an extra float32 copy of the parameters (4). This doesn't save memory, but is faster. "), link(zero_2019)
+    text("Caveat 2: activations are not accounted for (depends on batch size and sequence length).")
 
     text("This is a rough back-of-the-envelope calculation.")
 
