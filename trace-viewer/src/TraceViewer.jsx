@@ -20,6 +20,11 @@ function TraceViewer() {
   const [error, setError] = useState(null);
   const [trace, setTrace] = useState(null);
 
+  // Add new state for position and offset
+  const [envPosition, setEnvPosition] = useState({ x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
   // Fetch trace from backend
   useEffect(() => {
     if (!tracePath) {
@@ -80,6 +85,43 @@ function TraceViewer() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [trace, targetStepIndex, targetLineNumber, rawMode, animateMode, navigate]);
 
+  // Update drag handlers
+  const handleMouseDown = (e) => {
+    if (e.target.closest('.env-panel')) {
+      const panel = e.target.closest('.env-panel');
+      const rect = panel.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+      setIsDragging(true);
+      e.preventDefault();
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      setEnvPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Add event listeners for dragging
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
   // Not ready
   if (!tracePath) {
     return <div>No trace path provided</div>;
@@ -129,9 +171,21 @@ function TraceViewer() {
   const renderedLines = renderLines({trace, currentPath, currentLineNumber, currentStepIndex, targetStepIndex, rawMode, animateMode, navigate});
 
   return (
-    <div className="trace-viewer-container">
+    <div
+      className="trace-viewer-container"
+      onMouseDown={handleMouseDown}
+    >
       <div className="lines-panel">{renderedLines}</div>
-      <div className="env-panel">{renderedEnv}</div>
+      <div
+        className="env-panel"
+        style={{
+          left: envPosition.x,
+          top: envPosition.y,
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+      >
+        {renderedEnv}
+      </div>
     </div>
   );
 }
@@ -330,9 +384,9 @@ function makeProgressBar(currentStepIndex, totalSteps) {
   const progressPercentage = currentStepIndex !== null ? (currentStepIndex / (totalSteps - 1)) * 100 : 0;
   const stepProgress = currentStepIndex !== null ? `${currentStepIndex} / ${totalSteps}` : null;
   return (
-    <div title={stepProgress} style={{ 
-      width: '100%', 
-      height: '4px', 
+    <div title={stepProgress} style={{
+      width: '100%',
+      height: '4px',
       backgroundColor: 'lightgray',
       marginTop: '4px',
     }}>
@@ -357,7 +411,7 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
 
   // Get the file contents that we're showing
   const fileContents = trace.files[currentPath];
-  
+
   // Apply syntax highlighting
   const highlightedContents = hljs.highlight(fileContents, { language: "python" }).value;
   const lines = highlightedContents.trim().split("\n");
@@ -389,8 +443,8 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
     }
 
     const lineNumberSpan = (
-      <span 
-        key={0} 
+      <span
+        key={0}
         className="line-number code-container"
         onClick={() => gotoLine({trace, currentPath, currentLineNumber, currentStepIndex, lineNumber, navigate})}
       >
@@ -458,7 +512,7 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
     </div>
   );
 }
-        
+
 function gotoLine({trace, currentPath, currentLineNumber, currentStepIndex, lineNumber, navigate}) {
   // Find the step that matches the given lineNumber, looking in the direction given by currentLineNumber and lineNumber
   let stepIndex = currentStepIndex;
@@ -485,7 +539,7 @@ function gotoLine({trace, currentPath, currentLineNumber, currentStepIndex, line
   // Otherwise, just show the line
   updateUrlParams({ source: currentPath, line: lineNumber, step: null }, navigate);
 }
-      
+
 function scrollIntoViewIfNeeded(el) {
   // Check if element is already in view
   if (!el) {
@@ -500,7 +554,7 @@ function scrollIntoViewIfNeeded(el) {
   // If it's not too much, the do smooth scrolling, otherwise do instant scrolling (so it doesn't take too long)
   const scrollDistance = Math.min(Math.abs(rect.top - 0), Math.abs(rect.bottom - windowHeight));
   const behavior = scrollDistance <= 100 ? 'smooth' : 'instant';
-  
+
   // Only scroll if element is not in view
   if (!isInView) {
     el.scrollIntoView({behavior, block: 'center'});
@@ -544,9 +598,9 @@ function ExternalLink({ link, style }) {
 
   return (
     <div className="link-container" style={{ display: 'inline-block', position: 'relative' }}>
-      <a 
-        href={link.url} 
-        target="_blank" 
+      <a
+        href={link.url}
+        target="_blank"
         style={style}
         className="external-link"
       >
@@ -615,7 +669,7 @@ function renderRendering(rendering, navigate) {
     return <span style={rendering.style}>{rendering.data}</span>;
   }
 }
-      
+
 function updateUrlParams(params, navigate) {
   const urlParams = new URLSearchParams(window.location.search);
   Object.entries(params).forEach(([key, value]) => {
