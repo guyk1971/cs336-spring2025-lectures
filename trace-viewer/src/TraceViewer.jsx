@@ -263,12 +263,37 @@ function getStepUpIndex({trace, currentStepIndex, direction}) {
  */
 function computeLinesToShow({trace, currentStepIndex}) {
   const linesToShow = {};
+  const pathToLines = {};  // path -> lines
+
   for (let stepIndex = 0; stepIndex <= currentStepIndex; stepIndex++) {
     const step = trace.steps[stepIndex];
     const stackElement = getLast(step.stack);
     const path = stackElement.path;
-    const lineNumber = stackElement.line_number;
-    linesToShow[getLocation(path, lineNumber)] = true;
+    let lineNumber = stackElement.line_number;
+
+    // Also show lines that are before this line up to a line with no indent
+    while (true) {
+      const loc = getLocation(path, lineNumber);
+      if (linesToShow[loc]) {
+        break;
+      }
+      linesToShow[loc] = true;
+
+      let lines = pathToLines[path];
+      if (!lines) {
+        lines = trace.files[path].split("\n");
+        pathToLines[path] = lines;
+      }
+
+      const line = lines[lineNumber - 1];
+      if (line.match(/^\w/)) {  // No indent
+        break;
+      }
+      lineNumber--;
+      if (lineNumber === 0) {
+        break;
+      }
+    }
   }
   return linesToShow;
 }

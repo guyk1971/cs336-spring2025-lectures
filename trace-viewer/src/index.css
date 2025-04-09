@@ -165,6 +165,7 @@ button {
   position: fixed;
   overflow-y: auto;
   z-index: 1000;
+  max-height: 90vh;
 }
 
 .env {
