@@ -162,11 +162,10 @@ button {
 }
 
 .env-panel {
-  flex: 1;
-  position: sticky;
-  top: 10px;
-  height: calc(100vh - 10px);
+  position: fixed;
   overflow-y: auto;
+  z-index: 1000;
+  max-height: 90vh;
 }
 
 .env {
