@@ -243,7 +243,7 @@ def tensor_slicing():
     assert torch.equal(y, torch.tensor([2, 5]))
     assert same_storage(x, y)
 
-    text("View 3x2 matrix as 2x3 matrix:")
+    text("View 2x3 matrix as 3x2 matrix:")
     y = x.view(3, 2)  # @inspect y
     assert torch.equal(y, torch.tensor([[1, 2], [3, 4], [5, 6]]))
     assert same_storage(x, y)
