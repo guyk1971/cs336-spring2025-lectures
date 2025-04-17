@@ -10,3 +10,4 @@ wandb
 einops
 jaxtyping
 readable-number
+triton
