@@ -48,3 +48,8 @@ def get_init_params(num_inputs: int, num_outputs: int, rank: int) -> nn.Paramete
     torch.random.manual_seed(0)  # For reproducibility
     return nn.Parameter(torch.randn(num_inputs, num_outputs, device=get_device(rank)) / math.sqrt(num_outputs))
 
+
+def render_duration(duration: float) -> str:
+    if duration < 1000:
+        return f"{duration:.2f}ms"
+    return f"{duration / 1000:.2f}s"
