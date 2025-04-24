@@ -5,6 +5,8 @@ which will be shown in place of the line of code in the interface.
 
 import os
 import inspect
+import re
+import subprocess
 from file_util import cached, relativize
 from dataclasses import dataclass
 from arxiv_util import is_arxiv_link, arxiv_reference
@@ -115,3 +117,14 @@ def pop_renderings() -> list[Rendering]:
     renderings = _current_renderings.copy()
     _current_renderings.clear()
     return renderings
+
+
+def system_text(command: list[str]):
+    output = subprocess.check_output(command).decode('utf-8')
+    output = remove_ansi_escape_sequences(output)
+    text(output, verbatim=True)
+
+
+def remove_ansi_escape_sequences(text):
+    ansi_escape_pattern = re.compile(r'\x1b\[[0-9;]*m')
+    return ansi_escape_pattern.sub('', text)
