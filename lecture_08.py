@@ -113,7 +113,7 @@ def torch_distributed():
     text("- Launches CUDA kernels to send/receive data")
 
     text("### PyTorch distributed library (`torch.distributed`)")
-    link("[Documentation]", url="https://pytorch.org/docs/stable/distributed.html")
+    link(title="[Documentation]", url="https://pytorch.org/docs/stable/distributed.html")
 
     text("- Provides clean interface for collective operations (e.g., `all_gather_into_tensor`)")
     text("- Supports multiple backends for different hardware: gloo (CPU), nccl (GPU)")
