@@ -50,6 +50,8 @@ def get_init_params(num_inputs: int, num_outputs: int, rank: int) -> nn.Paramete
 
 
 def render_duration(duration: float) -> str:
-    if duration < 1000:
-        return f"{duration:.2f}ms"
-    return f"{duration / 1000:.2f}s"
+    if duration < 1e-3:
+        return f"{duration * 1e6:.2f}us"
+    if duration < 1:
+        return f"{duration * 1e3:.2f}ms"
+    return f"{duration:.2f}s"

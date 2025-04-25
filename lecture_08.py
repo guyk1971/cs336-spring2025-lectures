@@ -91,7 +91,7 @@ def torch_distributed():
     text("Classic (in the home):")
     image("https://media.springernature.com/lw685/springer-static/image/art%3A10.1186%2Fs42774-021-00098-3/MediaObjects/42774_2021_98_Fig1_HTML.png?as=webp", width=400)
     text("- GPUs on same node communicate via a PCI(e) bus (v7.0, 16 lanes => 242 GB/s) "), article_link("https://en.wikipedia.org/wiki/PCI_Express")
-    text("- GPUs on different nodes communicate via Ethernet (~200 MB/sec)")
+    text("- GPUs on different nodes communicate via Ethernet (~200 MB/s)")
 
     text("Modern (in the data center):")
     image("https://www.nextplatform.com/wp-content/uploads/2018/04/nvidia-nvswitch-topology-two.jpg", width=400)
@@ -204,7 +204,7 @@ def all_reduce(rank: int, world_size: int, num_elements: int):
     sent_bytes = size_bytes * 2 * (world_size - 1)  # 2x because send input and receive output
     total_duration = world_size * duration
     bandwidth = sent_bytes / total_duration
-    print(f"[all_reduce] Rank {rank}: all_reduce measured bandwidth = {round(bandwidth / 1024**3)} GB/sec", flush=True)
+    print(f"[all_reduce] Rank {rank}: all_reduce measured bandwidth = {round(bandwidth / 1024**3)} GB/s", flush=True)
 
     cleanup()
 
@@ -239,7 +239,7 @@ def reduce_scatter(rank: int, world_size: int, num_elements: int):
     sent_bytes = data_bytes * (world_size - 1)  # How much needs to be sent (no 2x here)
     total_duration = world_size * duration  # Total time for transmission
     bandwidth = sent_bytes / total_duration
-    print(f"[reduce_scatter] Rank {rank}: reduce_scatter measured bandwidth = {round(bandwidth / 1024**3)} GB/sec", flush=True)
+    print(f"[reduce_scatter] Rank {rank}: reduce_scatter measured bandwidth = {round(bandwidth / 1024**3)} GB/s", flush=True)
 
     cleanup()
 
@@ -387,7 +387,7 @@ def pipeline_parallelism_main(rank: int, world_size: int, data: torch.Tensor, nu
             x = x @ param
             x = F.gelu(x)
 
-        # Send to the next rank (asynchronously)
+        # Send to the next rank
         if rank + 1 < world_size:
             print(f"[pipeline_parallelism] Rank {rank}: sending {summarize_tensor(x)} to rank {rank + 1}", flush=True)
             dist.send(tensor=x, dst=rank + 1)
