@@ -8,7 +8,7 @@ def main():
     x = 4  # @inspect x
     y = 5  # @inspect y
     z = compute(x)  # @inspect z
-    text("Hello")
+    text("Hello $x^2$")
 
 if __name__ == "__main__":
     main()

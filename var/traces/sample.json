@@ -1,6 +1,6 @@
 {
   "files": {
-    "sample.py": "from execute_util import text\n\ndef compute(a: int):  # @inspect a\n    return a + 1\n\ndef main():\n    # what\n    x = 4  # @inspect x\n    y = 5  # @inspect y\n    z = compute(x)  # @inspect z\n    text(\"Hello\")\n\nif __name__ == \"__main__\":\n    main()\n"
+    "sample.py": "from execute_util import text\n\ndef compute(a: int):  # @inspect a\n    return a + 1\n\ndef main():\n    # what\n    x = 4  # @inspect x\n    y = 5  # @inspect y\n    z = compute(x)  # @inspect z\n    text(\"Hello $x^2$\")\n\nif __name__ == \"__main__\":\n    main()\n"
   },
   "steps": [
     {
@@ -127,14 +127,14 @@
           "path": "sample.py",
           "line_number": 11,
           "function_name": "main",
-          "code": "text(\"Hello\")"
+          "code": "text(\"Hello $x^2$\")"
         }
       ],
       "env": {},
       "renderings": [
         {
           "type": "markdown",
-          "data": "Hello",
+          "data": "Hello $x^2$",
           "style": {},
           "external_link": null,
           "internal_link": null
