@@ -8,7 +8,9 @@ import triton
 import triton.language as tl
 from execute_util import text, link, image
 from file_util import ensure_directory_exists
+from lecture_util import article_link
 from torch_util import get_device
+from lecture_06_utils import check_equal, check_equal2, get_local_url, round1, mean
 import os
 
 def main():
@@ -50,8 +52,8 @@ def main():
 
 
 def announcements():
-    text("Assignment 1 leaderboard"), link("https://github.com/stanford-cs336/spring2025-assignment1-basics-leaderboard")
-    text("Assignment 2 is out"), link("https://github.com/stanford-cs336/spring2025-assignment2-systems")
+    text("Assignment 1 leaderboard "), link(title="[Leaderboard]", url="https://github.com/stanford-cs336/spring2025-assignment1-basics-leaderboard")
+    text("Assignment 2 is out "), link(title="[A2]", url="https://github.com/stanford-cs336/spring2025-assignment2-systems")
 
 
 def review_of_gpus():
@@ -171,40 +173,61 @@ def benchmarking():
     text("### Benchmarking matrix multiplication")
     text("First, let us benchmark matrix multiplication of square matrices.")
     if torch.cuda.is_available():
-        dims = (1024, 2048, 4096, 8192, 16384)
+        dims = (1024, 2048, 4096, 8192, 16384)  # @inspect dims
     else:
-        dims = (1024, 2048)
+        dims = (1024, 2048)  # @inspect dims
+    
+    matmul_results = [] 
     for dim in dims:
-        benchmark(f"matmul(dim={dim})", run_operation2(dim=dim, operation=lambda a, b: a @ b))
-    text("Times scale cubicly with dimension.")
+        # @ inspect dim
+        result = benchmark(f"matmul(dim={dim})", run_operation2(dim=dim, operation=lambda a, b: a @ b))
+        matmul_results.append((dim, result))  # @inspect matmul_results
 
     text("Let us benchmark our MLP!")
-    dim = 256
-    num_layers = 4
-    batch_size = 256
-    num_steps = 2
+    dim = 256  # @inspect dim
+    num_layers = 4  # @inspect num_layers 
+    batch_size = 256  # @inspect batch_size
+    num_steps = 2  # @inspect num_steps
 
-    benchmark("run_mlp", run_mlp(dim=dim, num_layers=num_layers, batch_size=batch_size, num_steps=num_steps))
+    mlp_base = benchmark("run_mlp", run_mlp(dim=dim, num_layers=num_layers, batch_size=batch_size, num_steps=num_steps)) # @inspect mlp_base
+
 
     text("Scale the number of steps.")
+    step_results = []
     for scale in (2, 3, 4, 5):
-        benchmark(f"run_mlp({scale}x num_steps)", run_mlp(dim=dim, num_layers=scale * num_layers, batch_size=batch_size, num_steps=scale * num_steps))
+        result = benchmark(f"run_mlp({scale}x num_steps)", 
+                         run_mlp(dim=dim, num_layers=num_layers, 
+                                batch_size=batch_size, num_steps=scale * num_steps)) # @inspect result, @inspect scale, @inspect num_steps
+        step_results.append((scale, result))  # @inspect step_results
 
     text("Scale the number of layers.")
+    layer_results = []
     for scale in (2, 3, 4, 5):
-        benchmark(f"run_mlp({scale}x num_layers)", run_mlp(dim=dim, num_layers=scale * num_layers, batch_size=batch_size, num_steps=num_steps))
+        result = benchmark(f"run_mlp({scale}x num_layers)", 
+                         run_mlp(dim=dim, num_layers=scale * num_layers, 
+                                batch_size=batch_size, num_steps=num_steps)) # @inspect result, @inspect scale, @inspect num_layers, @inspect num_steps
+        layer_results.append((scale, result))  # @inspect layer_results
 
     text("Scale the batch size.")
+    batch_results = []
     for scale in (2, 3, 4, 5):
-        benchmark(f"run_mlp({scale}x batch_size)", run_mlp(dim=dim, num_layers=num_layers, batch_size=scale * batch_size, num_steps=num_steps))
+        result = benchmark(f"run_mlp({scale}x batch_size)", 
+                         run_mlp(dim=dim, num_layers=num_layers, 
+                                batch_size=scale * batch_size, num_steps=num_steps)) # @inspect result, @inspect scale, @inspect num_layers, @inspect num_steps
+        batch_results.append((scale, result))  # @inspect batch_results
 
     text("Scale the dimension.")
+    dim_results = []
     for scale in (2, 3, 4, 5):
-        benchmark(f"run_mlp({scale}x dim)", run_mlp(dim=scale * dim, num_layers=num_layers, batch_size=batch_size, num_steps=num_steps))
+        result = benchmark(f"run_mlp({scale}x dim)", 
+                         run_mlp(dim=scale * dim, num_layers=num_layers, 
+                                batch_size=batch_size, num_steps=num_steps)) # @inspect result, @inspect scale, @inspect num_layers, @inspect num_steps
+        dim_results.append((scale, result))  # @inspect dim_results
 
     text("The timings are not always predictable due to the non-homogenous nature of CUDA kernels, hardware, etc.")
 
-    text("You can also use `torch.utils.benchmark`, which provides more amenities."), link("https://pytorch.org/tutorials/recipes/recipes/benchmark.html")
+    text("You can also use `torch.utils.benchmark`, which provides more amenities. "), 
+    link("https://pytorch.org/tutorials/recipes/recipes/benchmark.html")
     text("We did not use this to make benchmarking more transparent.")
 
 
@@ -218,7 +241,7 @@ def benchmark(description: str, run: Callable, num_warmups: int = 1, num_trials:
         torch.cuda.synchronize()  # Wait for CUDA threads to finish (important!)
 
     # Time it for real now!
-    times: list[float] = []
+    times: list[float] = [] # @inspect times, @inspect description
     for trial in range(num_trials):  # Do it multiple times to capture variance
         start_time = time.time()
 
@@ -227,10 +250,10 @@ def benchmark(description: str, run: Callable, num_warmups: int = 1, num_trials:
             torch.cuda.synchronize()  # Wait for CUDA threads to finish (important!)
 
         end_time = time.time()
-        times.append((end_time - start_time) * 1000)
+        times.append((end_time - start_time) * 1000) # @inspect times
 
-    mean_time = mean(times)
-    text(f"{description}: {list(map(round1, sorted(times)))} (mean {round1(mean_time)} ms)")
+    mean_time = mean(times) # @inspect mean_time
+    return mean_time
 
 
 def profiling():
@@ -238,15 +261,30 @@ def profiling():
     text("Obvious: profiling helps you understand where time is being spent.")
     text("Deeper: profiling helps you understand (what is being called).")
 
-    text("PyTorch has a nice built-in profiler"), link("https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html")
+    text("PyTorch has a nice built-in profiler "), link("https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html")
 
     text("Let's profile some code to see what is going on under the hood.")
-    profile("sleep", lambda : time.sleep(50 / 1000))  # Dummy function
+    sleep_function = lambda : time.sleep(50 / 1000)
+    sleep_profile = profile("sleep", sleep_function) 
+    text(f"## sleep")
+    text(sleep_profile, verbatim=True)
+    
 
     text("Let's start with some basic operations.")
-    profile("add", run_operation2(dim=2048, operation=lambda a, b: a + b))
-    profile("matmul", run_operation2(dim=2048, operation=lambda a, b: a @ b))
-    profile("matmul(dim=128)", run_operation2(dim=128, operation=lambda a, b: a @ b))
+    add_function = lambda a, b: a + b
+    add_profile = profile("add", run_operation2(dim=2048, operation=add_function))
+    text(f"## add")
+    text(add_profile, verbatim=True)
+
+    matmul_function = lambda a, b: a @ b
+    matmul_profile = profile("matmul", run_operation2(dim=2048, operation=matmul_function))
+    text(f"## matmul")
+    text(matmul_profile, verbatim=True)
+
+    matmul_function_128 = lambda a, b: a @ b
+    matmul_profile_128 = profile("matmul(dim=128)", run_operation2(dim=128, operation=matmul_function_128))
+    text(f"## matmul(dim=128)")
+    text(matmul_profile_128, verbatim=True)
 
     text("Observations")
     text("- You can see what CUDA kernels are actually being called.")
@@ -258,16 +296,29 @@ def profiling():
     text("- 256x128: tile size")
 
     text("Let's now look at some composite operations.")
-    profile("cdist", run_operation2(dim=2048, operation=lambda a, b: torch.cdist(a, b)))
-    profile("gelu", run_operation2(dim=2048, operation=lambda a, b: torch.nn.functional.gelu(a + b)))
-    profile("softmax", run_operation2(dim=2048, operation=lambda a, b: torch.nn.functional.softmax(a + b, dim=-1)))
+    cdist_function = lambda a, b: torch.cdist(a, b)
+    cdist_profile = profile("cdist", run_operation2(dim=2048, operation=cdist_function))
+    text(f"## cdist")
+    text(cdist_profile, verbatim=True)
+
+    gelu_function = lambda a, b: torch.nn.functional.gelu(a + b)
+    gelu_profile = profile("gelu", run_operation2(dim=2048, operation=gelu_function))
+    text(f"## gelu")
+    text(gelu_profile, verbatim=True)
+
+    softmax_function = lambda a, b: torch.nn.functional.softmax(a + b, dim=-1)
+    softmax_profile = profile("softmax", run_operation2(dim=2048, operation=softmax_function))
+    text(f"## softmax")
+    text(softmax_profile, verbatim=True)
 
     text("Now let's profile our MLP.")
     text("We will also visualize our stack trace using a flame graph, which reveals where time is being spent.")
     if torch.cuda.is_available():
-        profile("mlp", run_mlp(dim=2048, num_layers=64, batch_size=1024, num_steps=2), with_stack=True)
+        mlp_profile = profile("mlp", run_mlp(dim=2048, num_layers=64, batch_size=1024, num_steps=2), with_stack=True)
     else:
-        profile("mlp", run_mlp(dim=128, num_layers=16, batch_size=128, num_steps=2), with_stack=True)
+        mlp_profile = profile("mlp", run_mlp(dim=128, num_layers=16, batch_size=128, num_steps=2), with_stack=True)
+    text(f"## mlp")
+    text(mlp_profile, verbatim=True)
 
 
 def profile(description: str, run: Callable, num_warmups: int = 1, with_stack: bool = False):
@@ -292,28 +343,19 @@ def profile(description: str, run: Callable, num_warmups: int = 1, with_stack: b
     table = prof.key_averages().table(sort_by="cuda_time_total",
                                       max_name_column_width=80,
                                       row_limit=10)
-    text(f"## {description}")
-    text(table, verbatim=True)
+    #text(f"## {description}")
+    #text(table, verbatim=True)
 
     # Write stack trace visualization
     if with_stack:
         text_path = f"var/stacks_{description}.txt"
         svg_path = f"var/stacks_{description}.svg"
         prof.export_stacks(text_path, "self_cuda_time_total")
-        create_flame_graph(text_path, svg_path)
-        image(svg_path, width=800)
 
-
-def create_flame_graph(in_path: str, out_path: str):
-    """Create a flame graph from the profiler output in `in_path` and output a SVG file to `out_path`."""
-    # https://www.brendangregg.com/flamegraphs.html
-    if not os.path.exists("FlameGraph"):
-        os.system("git clone https://github.com/brendangregg/FlameGraph")
-    os.system(f"FlameGraph/flamegraph.pl --title \"CUDA time\" --countname \"us\" {in_path} > {out_path}")
-
+    return table
 
 def kernel_fusion_motivation():
-    text("Horace He's blog post"), link("https://horace.io/brrr_intro.html")
+    text("Horace He's blog post "), link(title="[Article]", url="https://horace.io/brrr_intro.html")
 
     text("Analogy: warehouse : DRAM :: factory : SRAM")
     image("https://horace.io/img/perf_intro/factory_bandwidth.png", width=800)
@@ -324,17 +366,17 @@ def kernel_fusion_motivation():
     text("If we *fuse* the operations, only need to read/write once:")
     image("https://horace.io/img/perf_intro/operator_fusion.png", width=800)
 
-    text("To see the effect of fusion, let's consider the GeLU activation function.")
+    text("To see the effect of fusion, let's consider the GeLU activation function. "), 
     link("https://pytorch.org/docs/stable/generated/torch.nn.GELU.html")
 
     text("Let's consider two ways to compute GeLU:")
-    x = torch.tensor([1.])  # Input
+    x = torch.tensor([1.])  # @inspect x
 
     text("1. The default PyTorch implementation (fused):")
-    y1 = pytorch_gelu(x)  # Fused
+    y1 = pytorch_gelu(x)  # @inspect y1
 
     text("2. We can also write our own by hand (not fused):")
-    y2 = manual_gelu(x)  # Not fused
+    y2 = manual_gelu(x)  # @inspect y2
 
     # Check that the implementations match
     assert torch.allclose(y1, y2)
@@ -343,32 +385,44 @@ def kernel_fusion_motivation():
     check_equal(pytorch_gelu, manual_gelu)
 
     text("Let's benchmark.")
-    benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu))
-    benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu))
-    text("The fused version is significantly faster.")
+    manual_time = benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu)) # @inspect manual_time
+    pytorch_time = benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu)) # @inspect pytorch_time
+    if manual_time is not None and pytorch_time is not None:
+        text(f"The fused version is significantly faster: {manual_time:.2f} ms, {pytorch_time:.2f} ms")
+    else:
+        text("Could not compare times - benchmark results were None")
 
     text("Let's look under the hood.")
-    profile("manual_gelu", run_operation1(dim=16384, operation=manual_gelu))
-    profile("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu))
+    manual_gelu_profile = profile("manual_gelu", run_operation1(dim=16384, operation=manual_gelu))
+    text(f"## manual_gelu")
+    text(manual_gelu_profile, verbatim=True)
+    pytorch_gelu_profile = profile("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu))
+    text(f"## pytorch_gelu")
+    text(pytorch_gelu_profile, verbatim=True)
     text("The PyTorch just calls one kernel whereas the others are atomic (remember the warehouse/factory) ")
+
+    text(f"## Look at Nsight profiler for MLP   ")
 
 
 def cuda_kernels():
     text("Now let's open the box to understand what's going on inside a CUDA kernel by writing our own.")
 
     text("Let's write the GeLU function in CUDA.")
-    cuda_gelu = create_cuda_gelu()
+    cuda_gelu = create_cuda_gelu() # @inspect cuda_gelu
+    x = manual_gelu # @inspect x
 
     text("Check correctness of our implementation.")
     if cuda_gelu is not None:
         check_equal(cuda_gelu, manual_gelu)
 
     text("Benchmark our CUDA version.")
-    benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu))
-    benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu))
+    pytorch_time = benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu)) # @inspect pytorch_time
+    manual_time = benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu)) # @inspect manual_time
     if cuda_gelu is not None:
-        benchmark("cuda_gelu", run_operation1(dim=16384, operation=cuda_gelu))
-        profile("cuda_gelu", run_operation1(dim=16384, operation=cuda_gelu))
+        cuda_time = benchmark("cuda_gelu", run_operation1(dim=16384, operation=cuda_gelu)) # @inspect cuda_time 
+        cuda_gelu_profile = profile("cuda_gelu", run_operation1(dim=16384, operation=cuda_gelu))
+        text(f"## cuda_gelu")
+        text(cuda_gelu_profile, verbatim=True)
     text("Our CUDA implementation is faster than manual, but not as good as PyTorch.")
 
     text("Elementwise operations are easy in CUDA (though you can still be smarter).")
@@ -395,6 +449,7 @@ def create_cuda_gelu():
 
     # CUDA code: has the full logic
     cuda_gelu_src = open("gelu.cu").read()
+    text(cuda_gelu_src, verbatim=True)
 
     # C++ code: defines the gelu function
     cpp_gelu_src = "torch::Tensor gelu(torch::Tensor x);"
@@ -423,20 +478,19 @@ def triton_kernels():
 
 
 def triton_introduction():
-    text("Developed by OpenAI in 2021")
+    text("Developed by OpenAI in 2021 "), 
     link("https://openai.com/research/triton")
 
     text("Make GPU programming more accessible")
     text("- Write in Python")
     text("- Think about thread blocks rather than threads")
 
-    text("What does Triton offer?")
-    # TODO: fix formatting, can use markdown table, maybe...
-    text("                                             CUDA      Triton")
-    text("- Memory coalescing (transfer from DRAM)     manual    automatic")
-    text("- Shared memory management                   manual    automatic")
-    text("- Scheduling within SMs                      manual    automatic")
-    text("- Scheduling across SMs                      manual    manual")
+    text("What does Triton offer?", verbatim=True)
+    text("                                             CUDA      Triton", verbatim=True)
+    text("- Memory coalescing (transfer from DRAM)     manual    automatic", verbatim=True)
+    text("- Shared memory management                   manual    automatic", verbatim=True)
+    text("- Scheduling within SMs                      manual    automatic", verbatim=True)
+    text("- Scheduling across SMs                      manual    manual", verbatim=True)
 
     text("Compiler does more work, can actually outperform PyTorch implementations!")
 
@@ -458,12 +512,14 @@ def triton_gelu_main():
 
     text("Let's now benchmark it compared to the PyTorch and CUDA implementations.")
     text("Remember to set TRITON_INTERPRET=0 for good performance.")
-    benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu))
-    benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu))
-    benchmark("cuda_gelu", run_operation1(dim=16384, operation=create_cuda_gelu()))
-    benchmark("triton_gelu", run_operation1(dim=16384, operation=triton_gelu))
+    manual_time = benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu)) # @inspect manual_time
+    pytorch_time = benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu)) # @inspect pytorch_time
+    cuda_time = benchmark("cuda_gelu", run_operation1(dim=16384, operation=create_cuda_gelu())) # @inspect cuda_time
+    triton_time = benchmark("triton_gelu", run_operation1(dim=16384, operation=triton_gelu)) # @inspect triton_time
 
-    profile("triton_gelu", run_operation1(dim=16384, operation=triton_gelu))
+    triton_gelu_profile = profile("triton_gelu", run_operation1(dim=16384, operation=triton_gelu))
+    text(f"## triton_gelu")
+    text(triton_gelu_profile, verbatim=True)
 
     text("Our Triton implementation (triton_gelu):")
     text("- is almost as good as the PyTorch implementation (pytorch_gelu).")
@@ -510,6 +566,7 @@ def triton_gelu_kernel(x_ptr, y_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
     # Read
     x = tl.load(x_ptr + offsets, mask=mask)
 
+    # Approx gelu is 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
     # Compute (tl.tanh doesn't exist, use tanh(a) = (exp(2a) - 1) / (exp(2a) + 1)
     a = 0.79788456 * (x + 0.044715 * x * x * x)
     exp = tl.exp(2 * a)
@@ -526,7 +583,8 @@ def print_ptx_main():
     text("We can see the PTX code generated by Triton.")
     link("https://docs.nvidia.com/cuda/parallel-thread-execution/index.html")
 
-    print_ptx("triton_gelu", triton_gelu_kernel)
+    ptx = print_ptx("triton_gelu", triton_gelu_kernel)
+    text(ptx, verbatim=True)
 
     text("Observations:")
     text("- ld.global.* and st.global.* reads and writes from global memory")
@@ -534,12 +592,7 @@ def print_ptx_main():
     text("- %f* are floating point registers, %r* are integer registers")
     text("- One thread processes 8 elements at the same time (thread coarsening)")
 
-    text("We can compare this to the CUDA code we wrote earlier:")
-    link(get_local_url("var/cuda_gelu-ptx.txt"))
-    text("To get this, you have to look at the nvcc command that's printed out, "
-         "add `-ptx -o var/cuda_gelu-ptx.txt` and rerun it.")
-
-
+    
 def print_ptx(name: str, kernel):
     if os.environ.get("TRITON_INTERPRET") == "1":
         text("PTX is not generated when in interpret mode.")
@@ -547,19 +600,21 @@ def print_ptx(name: str, kernel):
 
     """Print out the PTX code generated by Triton for the given `kernel`."""
     ptx_path = f"var/{name}-ptx.txt"
-    with open(ptx_path, "w") as f:
-        print(list(kernel.cache[0].values())[0].asm["ptx"], file=f)
-
     text("Let's go poke around at the PTX code.")
     link(get_local_url(ptx_path))
+
+    with open(ptx_path, "w") as f:
+        return list(kernel.cache[0].values())[0].asm["ptx"]
+
+    
 
 
 def pytorch_compilation():
     text("So far, we have seen three ways to write GeLU:")
     text("- Use the default PyTorch function")
-    text("- Write it in Python"), link(manual_gelu)
-    text("- Write it in CUDA"), link(create_cuda_gelu)
-    text("- Write it in Triton"), link(triton_gelu)
+    text("- Write it in Python "), link(manual_gelu)
+    text("- Write it in CUDA "), link(create_cuda_gelu)
+    text("- Write it in Triton "), link(triton_gelu)
 
     text("- Write it in Python and compile it into Triton")
     compiled_gelu = torch.compile(manual_gelu)
@@ -571,21 +626,23 @@ def pytorch_compilation():
         return
 
     text("Let's benchmark and profile it!")
-    benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu))
-    benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu))
-    benchmark("cuda_gelu", run_operation1(dim=16384, operation=create_cuda_gelu()))
-    benchmark("triton_gelu", run_operation1(dim=16384, operation=triton_gelu))
-    benchmark("compiled_gelu", run_operation1(dim=16384, operation=compiled_gelu))
+    manual_time = benchmark("manual_gelu", run_operation1(dim=16384, operation=manual_gelu)) # @inspect manual_time
+    pytorch_time = benchmark("pytorch_gelu", run_operation1(dim=16384, operation=pytorch_gelu)) # @inspect pytorch_time
+    cuda_time = benchmark("cuda_gelu", run_operation1(dim=16384, operation=create_cuda_gelu())) # @inspect cuda_time
+    triton_time = benchmark("triton_gelu", run_operation1(dim=16384, operation=triton_gelu)) # @inspect triton_time
+    compiled_time = benchmark("compiled_gelu", run_operation1(dim=16384, operation=compiled_gelu)) # @inspect compiled_time
 
     text("Let's look under the hood")
-    profile("compiled_gelu", run_operation1(dim=16384, operation=compiled_gelu))
+    compiled_gelu_profile = profile("compiled_gelu", run_operation1(dim=16384, operation=compiled_gelu))
+    text(f"## compiled_gelu")
+    text(compiled_gelu_profile, verbatim=True)
 
 
 def triton_softmax_main():
     text("So far, we've looked at elementwise operations in Triton (e.g., GeLU).")
     text("Now let us look at operations that aggregate over multiple values.")
 
-    text("We will roughly follow the Triton fused softmax tutorial:"), link("https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html")
+    text("We will roughly follow the Triton fused softmax tutorial: "), link("https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html")
 
     text("Recall the softmax operation is used in attention and generating probabilities.")
     text("Normalize each row of a matrix:")
@@ -597,7 +654,7 @@ def triton_softmax_main():
         [5., 5, 5],
         [0, 0, 100],
     ], device=get_device())
-    y1 = manual_softmax(x)
+    y1 = manual_softmax(x) # @inspect y1
 
     if not torch.cuda.is_available():
         return
@@ -613,21 +670,28 @@ def triton_softmax_main():
     compiled_softmax = torch.compile(manual_softmax)
 
     text("Now let's benchmark everything.")
-    benchmark("manual_softmax", run_operation1(dim=16384, operation=manual_softmax))
-    benchmark("compiled_softmax", run_operation1(dim=16384, operation=compiled_softmax))
-    benchmark("pytorch_softmax", run_operation1(dim=16384, operation=pytorch_softmax))
-    benchmark("triton_softmax", run_operation1(dim=16384, operation=triton_softmax))
+    manual_time = benchmark("manual_softmax", run_operation1(dim=16384, operation=manual_softmax)) # @inspect manual_time
+    compiled_time = benchmark("compiled_softmax", run_operation1(dim=16384, operation=compiled_softmax)) # @inspect compiled_time
+    pytorch_time = benchmark("pytorch_softmax", run_operation1(dim=16384, operation=pytorch_softmax)) # @inspect pytorch_time
+    triton_time = benchmark("triton_softmax", run_operation1(dim=16384, operation=triton_softmax)) # @inspect triton_time
 
     text("Look under the hood using the profiler.")
-    profile("manual_softmax", run_operation1(dim=16384, operation=manual_softmax))
-    profile("compiled_softmax", run_operation1(dim=16384, operation=compiled_softmax))
-    profile("pytorch_softmax", run_operation1(dim=16384, operation=pytorch_softmax))
-    profile("triton_softmax", run_operation1(dim=16384, operation=triton_softmax))
+    manual_softmax_profile = profile("manual_softmax", run_operation1(dim=16384, operation=manual_softmax))
+    text(f"## manual_softmax")
+    text(manual_softmax_profile, verbatim=True)
+    compiled_softmax_profile = profile("compiled_softmax", run_operation1(dim=16384, operation=compiled_softmax))
+    text(f"## compiled_softmax")
+    text(compiled_softmax_profile, verbatim=True)
+    pytorch_softmax_profile = profile("pytorch_softmax", run_operation1(dim=16384, operation=pytorch_softmax))
+    text(f"## pytorch_softmax")
+    text(pytorch_softmax_profile, verbatim=True)
+    triton_softmax_profile = profile("triton_softmax", run_operation1(dim=16384, operation=triton_softmax))
+    text(f"## triton_softmax")
+    text(triton_softmax_profile, verbatim=True)
 
-    print_ptx("triton_softmax", triton_softmax_kernel)
-
-    text("Observations:")
-    text("- Triton outperforms everything!")
+    text("Let's end by looking at the PTX code.")
+    ptx = print_ptx("triton_softmax", triton_softmax_kernel)
+    text(ptx, verbatim=True)
 
 
 def manual_softmax(x: torch.Tensor):
@@ -737,7 +801,7 @@ def triton_matmul_main():
     text("- do mini-matrix multiplication,")
     text("- write the partial sum.")
 
-    text("Animation of tiled matrix multiplication"), link("https://youtu.be/aMvCEEBIBto")
+    text("Animation of tiled matrix multiplication "), link("https://youtu.be/aMvCEEBIBto")
 
     text("## Leveraging L2 cache")
 
@@ -762,43 +826,33 @@ def triton_matmul_main():
 
 
 def further_reading():
-    link("https://horace.io/brrr_intro.html")
+    text("Horace He's blog post "), link(title="[Article]", url="https://horace.io/brrr_intro.html")
 
-    text("CUDA MODE Lecture 1: how to profile CUDA kernels in PyTorch")
-    link("https://www.youtube.com/watch?v=LuhJEEJQgUM")
-    text("CUDA MODE Lecture 2: Chapters 1-3 of PPMP book")
-    link("https://www.youtube.com/watch?v=NQ-0D5Ti2dc")
-    text("CUDA MODE Lecture 3: Getting started with CUDA for Python Programmers")
-    link("https://www.youtube.com/watch?v=4sgKnKbR-WE")
-    text("CUDA MODE Lecture 4: Compute and memory basics")
-    link("https://www.youtube.com/watch?v=lTmYrKwjSOU")
-    text("CUDA MODE Lecture 8: CUDA performance checklist")
-    link("https://www.youtube.com/watch?v=SGhfUhlowB4")
+    text("CUDA MODE Lecture 1: how to profile CUDA kernels in PyTorch "), link(title="[Video]", url="https://www.youtube.com/watch?v=LuhJEEJQgUM")
+    text("CUDA MODE Lecture 2: Chapters 1-3 of PPMP book "), link(title="[Video]", url="https://www.youtube.com/watch?v=NQ-0D5Ti2dc")
+    text("CUDA MODE Lecture 3: Getting started with CUDA for Python Programmers "), link(title="[Video]", url="https://www.youtube.com/watch?v=4sgKnKbR-WE")
+    text("CUDA MODE Lecture 4: Compute and memory basics "), link(title="[Video]", url="https://www.youtube.com/watch?v=lTmYrKwjSOU")
+    text("CUDA MODE Lecture 8: CUDA performance checklist "), link(title="[Video]", url="https://www.youtube.com/watch?v=SGhfUhlowB4")
 
-    text("HetSys Course: Lecture 1: Programming heterogenous computing systems with GPUs")
-    link("https://www.youtube.com/watch?v=8JGo2zylE80")
-    text("HetSys Course: Lecture 2: SIMD processing and GPUs")
-    link("https://www.youtube.com/watch?v=x1MA4MtO4Tc")
-    text("HetSys Course: Lecture 3: GPU Software Hierarchy")
-    link("https://www.youtube.com/watch?v=KGZ00J5MJz0")
-    text("HetSys Course: Lecture 4: GPU Memory Hierarchy")
-    link("https://www.youtube.com/watch?v=ZQKMZIP3Fzg")
-    text("HetSys Course: Lecture 5: GPU performance considerations")
-    link("https://www.youtube.com/watch?v=ODeprwr3Jho")
+    text("HetSys Course: Lecture 1: Programming heterogenous computing systems with GPUs "), link(title="[Video]", url="https://www.youtube.com/watch?v=8JGo2zylE80")
+    text("HetSys Course: Lecture 2: SIMD processing and GPUs "), link(title="[Video]", url="https://www.youtube.com/watch?v=x1MA4MtO4Tc")
+    text("HetSys Course: Lecture 3: GPU Software Hierarchy "), link(title="[Video]", url="https://www.youtube.com/watch?v=KGZ00J5MJz0")
+    text("HetSys Course: Lecture 4: GPU Memory Hierarchy "), link(title="[Video]", url="https://www.youtube.com/watch?v=ZQKMZIP3Fzg")
+    text("HetSys Course: Lecture 5: GPU performance considerations "), link(title="[Video]", url="https://www.youtube.com/watch?v=ODeprwr3Jho")
 
-    link("https://jonathan-hui.medium.com/ai-chips-a100-gpu-with-nvidia-ampere-architecture-3034ed685e6e")
-    link("https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/index.html")
-    link("https://github.com/srush/gpu-puzzles")
-    link("https://www.eecs.harvard.edu/~htk/publication/2019-mapl-tillet-kung-cox.pdf")
-    link("https://towardsdatascience.com/how-pytorch-2-0-accelerates-deep-learning-with-operator-fusion-and-cpu-gpu-code-generation-35132a85bd26")
+    link(title="[A100 GPU with NVIDIA Ampere Architecture]", url="https://jonathan-hui.medium.com/ai-chips-a100-gpu-with-nvidia-ampere-architecture-3034ed685e6e")
+    link(title="[NVIDIA Deep Learning Performance Guide]", url="https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/index.html")
+    link(title="[GPU Puzzles]", url="https://github.com/srush/gpu-puzzles")
+    link(title="[Triton Paper]", url="https://www.eecs.harvard.edu/~htk/publication/2019-mapl-tillet-kung-cox.pdf")
+    link(title="[PyTorch 2.0 Acceleration]", url="https://towardsdatascience.com/how-pytorch-2-0-accelerates-deep-learning-with-operator-fusion-and-cpu-gpu-code-generation-35132a85bd26")
 
 ############################################################
 
 def print_gpu_specs():
-    num_devices = torch.cuda.device_count()
+    num_devices = torch.cuda.device_count()  # @inspect num_devices
     text(f"{num_devices} devices")
     for i in range(num_devices):
-        properties = torch.cuda.get_device_properties(i)
+        properties = torch.cuda.get_device_properties(i)  # @inspect properties
         text(f"{i}: {properties}")
 
 
@@ -815,32 +869,6 @@ def manual_gelu(x: torch.Tensor):
     return 0.5 * x * (1 + torch.tanh(0.79788456 * (x + 0.044715 * x * x * x)))
 
 
-def check_equal(f1, f2):
-    x = torch.randn(2048, device=get_device())
-    y1 = f1(x)
-    y2 = f2(x)
-    assert torch.allclose(y1, y2, atol=1e-6)
-
-
-def check_equal2(f1, f2):
-    x = torch.randn(2048, 2048, device=get_device())
-    y1 = f1(x)
-    y2 = f2(x)
-    assert torch.allclose(y1, y2, atol=1e-6)
-
-
-def get_local_url(path: str) -> str:
-    #return f"http://localhost:8000/{path}"
-    return "https://github.com/stanford-cs336/spring2024-lectures/blob/main/" + path;
-
-
-def round1(x: float) -> float:
-    """Round to 1 decimal place."""
-    return round(x, 1)
-
-
-def mean(x: list[float]) -> float:
-    return sum(x) / len(x)
 
 
 if __name__ == "__main__":

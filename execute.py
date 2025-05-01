@@ -6,6 +6,7 @@ import sys
 import json
 import traceback
 import torch
+import sympy
 from dataclasses import dataclass, asdict, field, is_dataclass, fields
 import os
 import re
@@ -62,6 +63,12 @@ def to_serializable_value(value: any) -> any:
     """Convert any type to a serializable value."""
     if isinstance(value, torch.Tensor):
         return value.tolist()
+    if isinstance(value, sympy.core.numbers.Integer):
+        return int(value)
+    if isinstance(value, sympy.core.numbers.Float):
+        return float(value)
+    if isinstance(value, sympy.core.symbol.Symbol):
+        return str(value)  # Would be nice to signal that this is not a string
     if isinstance(value, (int, float, str, bool)):
         return value
     if isinstance(value, list):

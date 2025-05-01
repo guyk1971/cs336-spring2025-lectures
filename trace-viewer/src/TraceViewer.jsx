@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
@@ -61,9 +61,9 @@ function TraceViewer() {
         stepForward({trace, currentStepIndex, navigate});
       } else if (!event.shiftKey && (event.key === 'ArrowLeft' || event.key === 'h')) {
         stepBackward({currentStepIndex, navigate});
-      } else if (event.shiftKey && (event.key === 'ArrowRight' || event.key === 'L')) {
+      } else if ((event.shiftKey && event.key === 'ArrowRight') || event.key === 'j') {
         stepOverForward({trace, currentStepIndex, navigate});
-      } else if (event.shiftKey && (event.key === 'ArrowLeft' || event.key === 'H')) {
+      } else if ((event.shiftKey && event.key === 'ArrowLeft') || event.key === 'k') {
         stepOverBackward({trace, currentStepIndex, navigate});
       } else if (event.key === 'u') {
         stepUp({trace, currentStepIndex, navigate});
@@ -226,11 +226,12 @@ function stepUp({trace, currentStepIndex, navigate}) {
 }
 
 function getStepOverIndex({trace, currentStepIndex, direction}) {
-  // Find the first step that is in the same level
+  // Find the next step that is in the same level but not the same line
   const currentStep = trace.steps[currentStepIndex];
   let stepIndex = currentStepIndex + direction;
   while (stepIndex >= 0 && stepIndex < trace.steps.length) {
-    if (inSameFunction(trace.steps[stepIndex].stack, currentStep.stack)) {
+    if (inSameFunction(trace.steps[stepIndex].stack, currentStep.stack) &&
+        getLast(trace.steps[stepIndex].stack).line_number !== getLast(currentStep.stack).line_number) {
       return stepIndex;
     }
     if (isStrictAncestorOf(trace.steps[stepIndex].stack, currentStep.stack)) {
@@ -395,11 +396,13 @@ function isStrictAncestorOf(stack1, stack2) {
 
 function renderValue(value) {
   if (typeof value === "number") {
-    if (value > 1e9) {
+    if (Math.abs(value) > 1e12) {
       // Use scientific notation
       return value.toExponential(3);
+    } if (Math.abs(value) < 1e6) {
+      return value.toString();
     } else {
-      return value.toLocaleString();
+      return value.toLocaleString();  // Put commas in the number
     }
   }
   return JSON.stringify(value, null, 2);
@@ -512,8 +515,8 @@ function renderLines({trace, currentPath, currentLineNumber, currentStepIndex, t
       <button title="Toggle raw mode (whether to show the underlying code) [shortcut: R]" onClick={() => toggleRawMode({rawMode, navigate})}>{rawIcon}</button>
       <button title="Step backward (into functions if necessary) [shortcut: h or left]" onClick={() => stepBackward({currentStepIndex, navigate})}>{stepBackwardIcon}</button>
       <button title="Step forward (into functions if necessary) [shortcut: l or right]" onClick={() => stepForward({trace, currentStepIndex, navigate})}>{stepForwardIcon}</button>
-      <button title="Step over backward (stay at this level of the stack) [shortcut: H or shift-left]" onClick={() => stepOverBackward({trace, currentStepIndex, navigate})}>{stepOverBackwardIcon}</button>
-      <button title="Step over forward (stay at this level of the stack) [shortcut: L or shift-right]" onClick={() => stepOverForward({trace, currentStepIndex, navigate})}>{stepOverForwardIcon}</button>
+      <button title="Step over backward (stay at this level of the stack) [shortcut: k or shift-left]" onClick={() => stepOverBackward({trace, currentStepIndex, navigate})}>{stepOverBackwardIcon}</button>
+      <button title="Step over forward (stay at this level of the stack) [shortcut: j or shift-right]" onClick={() => stepOverForward({trace, currentStepIndex, navigate})}>{stepOverForwardIcon}</button>
       <button title="Step forward until we're out of this function [shortcut: u]" onClick={() => stepUp({trace, currentStepIndex, navigate})}>{stepUpIcon}</button>
     </span>
   )
@@ -587,28 +590,34 @@ function scrollIntoViewIfNeeded(el) {
 }
 
 function MarkdownRenderer({ content, style }) {
-  // Because we're rendering only one line of content at a time, the markdown
-  // conversion puts <p> tags which produce a lot of vertical space.  So we
-  // remove them.
+  const [renderedContent, setRenderedContent] = useState("");
 
-  // Preserve the trailing whitespace
-  const trailingWhitespace = content.endsWith(" ") ? "&nbsp;" : "";
-
-  let markdown = marked(content);
-  markdown = markdown.replace(/\n$/, '');
-  markdown = markdown.replace(/^<p>/g, '').replace(/<\/p>$/g, '');
-
-  // Add the trailing whitespace back
-  markdown = markdown + trailingWhitespace;
-
-  // TODO: preserve math rendering when rerender (move)
+  // Render and set `renderedContent`
   useEffect(() => {
-    if (window.MathJax) {
-      window.MathJax.typesetPromise();
-    }
-  }, [content]);
+    // Preserve the trailing whitespace
+    const trailingWhitespace = content.endsWith(" ") ? "&nbsp;" : "";
 
-  return <span className="markdown" style={style} dangerouslySetInnerHTML={{ __html: markdown }} />;
+    // Because we're rendering only one line of content at a time, the markdown
+    // conversion puts <p> tags which produce a lot of vertical space.  So we
+    // remove them.
+    let markdown = marked(content);
+    markdown = markdown.replace(/\n$/, '');
+    markdown = markdown.replace(/^<p>/g, '').replace(/<\/p>$/g, '');
+
+    // Add the trailing whitespace back
+    markdown = markdown + trailingWhitespace;
+    setRenderedContent(markdown);
+  }, [content]);  // Only re-run if content changes
+
+  // Trigger MathJax to render
+  // TODO: this flickers every time we rerender (step)
+  useEffect(() => {
+    if (renderedContent && window.MathJax) {
+      window.MathJax.typeset();
+    }
+  }, [renderedContent]);  // If put this, then don't update; otherwise too slow
+
+  return <span className="markdown" style={style} dangerouslySetInnerHTML={{ __html: renderedContent }} />;
 }
 
 function ExternalLink({ link, style }) {

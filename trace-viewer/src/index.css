@@ -95,6 +95,13 @@ button {
   list-style-type: disc;
 }
 
+.markdown ol {
+  margin: 0;
+  padding-left: 17px;
+  line-height: inherit;
+  display: inline-block;
+}
+
 .link-container {
   display: inline-block;
   position: relative;

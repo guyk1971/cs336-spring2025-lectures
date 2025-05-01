@@ -95,6 +95,10 @@ longformer = arxiv_reference("https://arxiv.org/pdf/2004.05150.pdf", organizatio
     "Global attention to capture task-specific information",
 ))
 
+sparse_transformer = arxiv_reference("https://arxiv.org/pdf/1904.10509.pdf", organization="OpenAI", notes=join(
+    "Local attention"
+))
+
 megatron_parallelism_2021 = arxiv_reference("https://arxiv.org/pdf/2104.04473.pdf", organization="NVIDIA", notes=join(
     "Compose tensor, pipeline, data parallelism",
     "Achieve 52% MFU on 1T parameter model on 3072 GPUs",
