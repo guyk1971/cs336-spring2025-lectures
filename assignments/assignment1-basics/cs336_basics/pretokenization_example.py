@@ -50,7 +50,10 @@ def find_chunk_boundaries(
     return sorted(set(chunk_boundaries))
 
 ## Usage
-with open(..., "rb") as f:
+# file_path='../data/TinyStoriesV2-GPT4-valid.txt'
+file_path = os.path.join(os.path.dirname(__file__), "../data/TinyStoriesV2-GPT4-valid.txt")
+num_processes = 4
+with open(file_path, "rb") as f:
     boundaries = find_chunk_boundaries(
         f, num_processes, "<|endoftext|>".encode("utf-8"))
         
