@@ -53,7 +53,7 @@ function TraceViewer() {
     }
 
     const handleKeyDown = (event) => {
-      if (event.altKey) {  // Don't capture alt-right (for web page navigation)
+      if (event.altKey || event.ctrlKey) {  // Don't capture alt-right (for web page navigation)
         return;
       }
 

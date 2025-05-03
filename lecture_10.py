@@ -202,7 +202,7 @@ def arithmetic_intensity_of_inference():
     bytes_transferred += 2*B*T*D + 2*B*S*D + 2*B*S*D
     text("2. Compute A = Q (B x T x D) @ K (B x S x D)")
     flops += 2*B*S*T*D
-    text("3. Compute Y = A (B x S x T x K x G) @ V (B x S x K x H)")
+    text("3. Compute Y = softmax(A) (B x S x T x K x G) @ V (B x S x K x H)")
     flops += 2*B*S*T*D
     text("4. Write Y (B x T x D) to HBM")
     bytes_transferred += 2*B*T*D
@@ -266,11 +266,10 @@ def throughput_and_latency():
     text("So we have shown that inference is memory-limited.")
     text("Let us now compute the theoretical maximum latency and throughput of a single request.")
     text("Assumption: can overlap compute and communication perfectly and ignore various types of overhead.")
-    
+
     text("Instantiate latency and throughput for Llama 2 13B on an H100:")
     config = llama2_13b_config()
     num_params, memory, latency, throughput = compute_transformer_stats(config)
-    assert num_params == 13_015_449_600  # Sanity check
 
     text("If we use a batch size of 1:")
     bs1_memory = memory.subs(B, 1).simplify()   # @inspect bs1_memory
@@ -316,14 +315,14 @@ def reduce_kv_cache_size():
     image("images/gqa-speed.png", width=500); text(" "); link(gqa)
     text("Reduce the KV cache by a factor of N/K")
     config = llama2_13b_config({K: 40, B: 64})  # Original Llama 2 13B
-    k40_num_params, k40_memory, k40_latency, k40_throughput = compute_transformer_stats(config)  # @inspect k40_memory, k40_latency, @inspect k40_throughput
+    k40_num_params, k40_memory, k40_latency, k40_throughput = compute_transformer_stats(config)  # @inspect k40_memory, @inspect k40_latency, @inspect k40_throughput
 
     config = llama2_13b_config({K: 8, B: 64})  # Use GQA with 1:5 ratio
-    k8_num_params, k8_memory, k8_latency, k8_throughput = compute_transformer_stats(config)  # @inspect k8_memory, k8_latency, @inspect k8_throughput
+    k8_num_params, k8_memory, k8_latency, k8_throughput = compute_transformer_stats(config)  # @inspect k8_memory, @inspect k8_latency, @inspect k8_throughput
 
     text("This also means we can use a larger batch size:")
     config = llama2_13b_config({K: 8, B: 256})  # Increase batch size
-    k8_bs_num_params, k8_bs_memory, k8_bs_latency, k8_bs_throughput = compute_transformer_stats(config)  # @inspect k8_bs_memory, k8_bs_latency, @inspect k8_bs_throughput
+    k8_bs_num_params, k8_bs_memory, k8_bs_latency, k8_bs_throughput = compute_transformer_stats(config)  # @inspect k8_bs_memory, @inspect k8_bs_latency, @inspect k8_bs_throughput
     text("Worse latency, but better throughput (and it fits in memory now!).")
 
     text("Check that accuracy doesn't drop: "); link(gqa)
@@ -336,24 +335,27 @@ def reduce_kv_cache_size():
     text("Wrinkle: MLA is not compatible with RoPE, so need to add additional 64 dimensions for RoPE, so 512 + 64 = 576 total dimensions")
     text("Latency/throughput improvements follow similarly from the KV cache reduction as argued earlier")
 
-    text("Check accuracy: MLA is better than GQA "); link(mla)
+    text("Let's now check the accuracy.")
+    text("First, MHA is better than GQA (though more expensive) [Table 8] "); link(mla)
     image("images/mla-accuracy.png", width=800)
+    text("Second, MLA is a bit better than MHA (and much cheaper) [Table 9] "); link(mla)
+    image("images/mla-accuracy2.png", width=800)
 
     text("### Cross-layer attention (CLA) "), link("https://arxiv.org/abs/2405.12981")
     image("images/cla-diagram.png", width=500)
-    text("Idea: share key-value across **layers** (just as GQA shares across heads)")
-    text("Emirically improve the pareto frontier of accuracy and KV cache size (latency and throughput)")
+    text("Idea: share KVs across **layers** (just as GQA shares KVs across heads)")
+    text("Empirically improves the pareto frontier of accuracy and KV cache size (latency and throughput)")
     image("images/cla-results.png", width=700)
 
     text("### Local attention "), link(longformer), link(sparse_transformer), link(mistral_7b)
     image("images/longformer-attention.png", width=800)
-    text("Idea: just look at the local context, which is most relevant")
+    text("Idea: just look at the local context, which is most relevant for modeling")
     text("Effective context scales linearly with the number of layers")
     text("KV cache is independent of sequence length!")
 
     text("Problem: this can still hurt accuracy")
     text("Solution: interleave local attention with global attention (hybrid layers)")
-    text("Character.ai uses 1 global layer every 6 layers (in addition to CLA) "), article_link("https://research.character.ai/optimizing-inference/")
+    text("Example: character.ai uses 1 global layer every 6 layers (in addition to CLA) "), article_link("https://research.character.ai/optimizing-inference/")
     image("https://research.character.ai/content/images/2024/06/figure1-2-1.png", width=800)
 
     text("Summary:")
@@ -364,8 +366,8 @@ def reduce_kv_cache_size():
 
 def alternatives_to_the_transformer():
     text("We have shown that tweaking the architecture of the Transformer, we can improve latency and throughput.")
-    text("Attention + autoregression is fundamentally memory-boundedness (Transformers were not designed with inference in mind).")
-    text("Can we improve things even more if we go beyond the Transformer?")
+    text("Attention + autoregression is fundamentally memory-limited (Transformers were not designed with inference in mind).")
+    text("Can we substantially improve things if we go beyond the Transformer?")
     text("We will discuss two directions: state-space models and diffusion models.")
 
     text("## State-space models")
@@ -373,7 +375,7 @@ def alternatives_to_the_transformer():
     text("- Idea: from signal processing to model long-context sequences in a sub-quadratic time")
     text("- S4: based on classic state space models, good at synthetic long-context tasks "), link("https://arxiv.org/abs/2111.00396")
     image("images/s4-summary.png", width=800)
-    text("- Weaknesses: bad at solving associative recall tasks important for language (that Transformers do well)")
+    text("- Weaknesses: bad at solving associative recall tasks important for language (where Transformers do well)")
     image("images/based-associative-recall.png", width=400)
     text("- Mamba: allow SSM parameters to be input-dependent, match Transformers at 1B scale "), link("https://arxiv.org/abs/2312.00752")
     text("- Jamba: interleave Transformer-Mamba layers (1:7 ratio) with a 52B MoE "), link("https://arxiv.org/abs/2403.19887")
@@ -382,27 +384,26 @@ def alternatives_to_the_transformer():
     image("images/based-attention.png", width=400)
     text("- MiniMax-01: use linear attention + full attention (456B parameter MoE) "), link("https://arxiv.org/pdf/2501.08313")
 
-    text("Takeaway:")
+    text("Takeaways:")
     text("- Linear + local attention (still need some full attention) yield serious SOTA models")
     text("- Replace O(T) KV cache with O(1) state => much more efficient for inference")
 
     text("### Diffusion models")
     text("- Popular for image generation, but harder to get working for text generation "), link("https://arxiv.org/abs/2205.14217")
-    image("images/diffusion-lm.png", width=400)
+    image("images/diffusion-lm.png", width=700)
     text("- Idea: generate each token in parallel (not autoregressively), refine multiple time steps")
     text("- Start with random noise (over entire sequence), iteratively refine it")
     text("- Results from Inception Labs "), article_link("https://www.inceptionlabs.ai/news")
     link(title="[demo video]", url="https://x.com/i/status/1894847919624462794")
     text("Much faster on coding benchmarks:")
-    image("https://framerusercontent.com/images/K2zvhtaTsz5ehDFoWx6KQHOqCyk.jpg", width=600)
+    image("https://framerusercontent.com/images/K2zvhtaTsz5ehDFoWx6KQHOqCyk.jpg", width=800)
 
     text("Overall, significant gains in inference to be made with more radical architecture changes!")
 
 
 def quantization():
     text("Key idea: reduce the precision of numbers")
-    text("Less memory means higher latency/throughput (since inference is memory-limited)")
-    text("Also requires fewer FLOPs")
+    text("Less memory means higher latency/throughput (since inference is memory-limited).")
     text("Of course we have to worry about accuracy...")
 
     image("https://www.datocms-assets.com/104802/1709770809-twitter-post-20.png", width=400), article_link("https://www.baseten.co/blog/fp8-efficient-model-inference-with-8-bit-floating-point-numbers/")
@@ -418,7 +419,7 @@ def quantization():
 
     text("### LLM.int8()")
     link("https://arxiv.org/abs/2208.07339"), article_link("https://huggingface.co/blog/hf-bitsandbytes-integration")
-    text("Standard quantization (scale by absolute max):")
+    text("Standard quantization (scale by max of absolute values):")
     image("https://huggingface.co/blog/assets/96_hf_bitsandbytes_integration/quant-freeze.png", width=500)
     text("Problem: outliers (which appear in larger networks) screw everything up")
     text("Solution: extract outliers and process them in fp16")
@@ -461,7 +462,7 @@ def speculative_sampling():
     article_link("https://research.google/blog/looking-back-at-speculative-decoding/")
 
     image("images/speculative-sampling-algorithm.png", width=600)
-    text("This is modified rejection sampling with proposal p and target p")
+    text("This is modified rejection sampling with proposal p and target q")
     text("Modification: always generate at least one candidate (rejection sampling will keep looping)")
     text("Key property: guaranteed to be an **exact sample** from the target model!")
 
