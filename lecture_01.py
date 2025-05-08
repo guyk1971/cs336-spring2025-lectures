@@ -5,7 +5,7 @@ from collections import defaultdict
 import random
 
 from execute_util import link, image, text
-from lecture_util import article_link, tweet_link, youtube_link
+from lecture_util import article_link, x_link, youtube_link
 from references import gpt_3, gpt4, shannon1950, bengio2003, susketver2014, \
     bahdanau2015_attention, transformer_2017, gpt2, t5, kaplan_scaling_laws_2020, \
     gpt_3, the_pile, gpt_j, opt_175b, bloom, palm, chinchilla, llama, mistral_7b, \
@@ -81,7 +81,7 @@ def why_this_course_exists():
     text("Frontier models are out of reach for us.")
     text("But building small language models (<1B parameters in this class) might not be representative of large language models.")
 
-    text("Exmaple 1: fraction of FLOPs spent in attention versus MLP changes with scale. "), tweet_link("https://x.com/stephenroller/status/1579993017234382849")
+    text("Exmaple 1: fraction of FLOPs spent in attention versus MLP changes with scale. "), x_link("https://x.com/stephenroller/status/1579993017234382849")
     image("images/roller-flops.png", width=400)
     text("Example 2: emergence of behavior with scale "), link("https://arxiv.org/pdf/2206.07682")
     image("images/wei-emergence-plot.png", width=600)

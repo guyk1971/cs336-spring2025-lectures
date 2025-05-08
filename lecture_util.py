@@ -9,8 +9,8 @@ def blog_link(url: str) -> str:
     return link(title=" [blog]", url=url)
 
 
-def tweet_link(url: str) -> str:
-    return link(title=" [tweet]", url=url)
+def x_link(url: str) -> str:
+    return link(title=" [X]", url=url)
 
 
 def youtube_link(url: str) -> str:

@@ -317,6 +317,9 @@ deepseek_math = grpo = arxiv_reference("https://arxiv.org/pdf/2402.03300.pdf")
 
 kimi_1_5 = arxiv_reference("https://arxiv.org/pdf/2501.12599.pdf")
 
+llama4 = Reference(title="Llama 4", organization="Meta", url="https://ai.meta.com/blog/llama-4-multimodal-intelligence/")
+olmo2_32b = Reference(title="OLMo 2 (32B)", organization="AI2", url="https://allenai.org/blog/olmo2-32B")
+
 byt5 = arxiv_reference("https://arxiv.org/abs/2105.13626")
 megabyte = arxiv_reference("https://arxiv.org/pdf/2305.07185.pdf")
 blt = arxiv_reference("https://arxiv.org/abs/2412.09871")
