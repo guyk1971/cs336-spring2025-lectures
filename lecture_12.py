@@ -94,7 +94,7 @@ def how_to_think_about_evaluation():
     text("5. How do you handle open-ended generation (no ground truth)?")
 
     text("How do you inteprret the metrics?")
-    text("1. How do you interpret a number (e.g., 91\%) - is it ready for deployment?")
+    text("1. How do you interpret a number (e.g., 91%) - is it ready for deployment?")
     text("2. How do we assess generalization in the face of train-test overlap?")
     text("3. Are we evaluating the final model or the method?")
 
@@ -155,7 +155,7 @@ def knowledge_benchmarks():
     text("- Removed noisy/trivial questions from MMLU")
     text("- Expanded 4 choices to 10 choices")
     text("- Evaluated using chain of thought (gives model more of a chance)")
-    text("- Accuracy of models drop by 16\% to 33\% (not as saturated)")
+    text("- Accuracy of models drop by 16% to 33% (not as saturated)")
     image("images/mmlu-pro.png", width=800)
     link(title="[HELM MMLU-Pro for visualizing predictions]", url="https://crfm.stanford.edu/helm/capabilities/latest/#/leaderboard/mmlu_pro")
 

@@ -12,3 +12,4 @@ einops
 jaxtyping
 readable-number
 triton
+kenlm

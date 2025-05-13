@@ -485,7 +485,7 @@ def copyright():
     text("## Fair use (section 107)")
     text("Four factors to determine whether fair use applies:")
     text("1. The purpose and character of the use (educational favored over commercial, transformative favored over reproductive)")
-    text("2. The nature of the copyrighted work (fictional favored over factual, creativitive over non-creative)")
+    text("2. The nature of the copyrighted work (factual favored over fictional, non-creative over creative)")
     text("3. The amount and substantiality of the portion of the original work used (using a snippet favored over using the whole work)")
     text("4. The effect of the use upon the market (or potential market) for the original work")
 
