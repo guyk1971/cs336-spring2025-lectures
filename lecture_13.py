@@ -157,7 +157,7 @@ def gpt2_webtext():
 
 
 def common_crawl():
-    text("[Common Crawl](https://commoncrawl.org/) is a non-profit organization founded in 2007")
+    text("[Common Crawl](https://commoncrawl.org/) is a non-profit organization founded in 2007.")
 
     text("Statistics")
     text("- Every ~month, run a web crawl")
@@ -224,14 +224,14 @@ def t5_c4():
 
     text("End result: 806 GB of text (156 billion tokens)")
 
-    text("WebText-like dataset")
-    text("- Filtered to pages from OpenWebText links (links in Reddit posts with >= 3 karma)")
-    text("- Used 12 dumps to get 17 GB text (WebText was 40 GB, suggesting CommonCrawl is incomplete)")
-    text("- This improved on various NLP benchmarks (GLUE, SQuAD, etc.)")
-
     text("Analysis of C4 "), link("https://arxiv.org/pdf/2104.08758")
     image("https://stanford-cs324.github.io/winter2022/lectures/images/c4-domains.png", width=700)
     text("- Made the actual dataset available (not just scripts)")
+
+    text("Bonus: WebText-like dataset")
+    text("- Filtered to pages from OpenWebText links (links in Reddit posts with >= 3 karma)")
+    text("- Used 12 dumps to get 17 GB text (WebText was 40 GB, suggesting CommonCrawl is incomplete)")
+    text("- This improved on various NLP benchmarks (GLUE, SQuAD, etc.)")
 
 
 def gpt3():
@@ -296,14 +296,14 @@ def books3():
 
 def stackexchange():
     text("- Collection of sites of user-contributed questions and answers")
-    text("- Started with StackOverflow in 2008, grew to other topics (e.g., math, literature) [sites](https://stackexchange.com/sites)")
+    text("- Started with StackOverflow in 2008, grew to other topics (e.g., math, literature) "), named_link("sites", "https://stackexchange.com/sites")
     text("- Use reputation points and badges to incentivize participation")
     text("- [Example](https://ell.stackexchange.com/questions/351826/is-he-not-the-carpenters-son-v-s-is-not-he-the-carpenters-son)")
     text("- [Random examples](https://www.isimonbrown.co.uk/dicestack/)")
 
     text("- Q&A format is close to instruction tuning / real application")
     text("- Note: there is metadata (users, votes, comments, badges, tags) for filtering")
-    text("- Data dumps in XML (anonymized, include metadata) [link](https://archive.org/details/stackexchange)")
+    text("- Data dumps in XML (anonymized, include metadata) "), named_link("link", "https://archive.org/details/stackexchange)")
 
 
 def github():
@@ -440,77 +440,6 @@ def nemotron_cc():
     image("images/nemotron-results.png", width=800)
 
 
-def long_context():
-    text("Demand for long contexts (want to do QA on books)")
-    text("- DeepSeek v3 has 128K tokens")
-    text("- Claude 3.5 Sonnet has 200K tokens")
-    text("- Gemini 1.5 Pro has 1.5M tokens")
-
-    text("Transformers scales quadratically with sequence length")
-    text("Not efficient to pre-train on long contexts, want to add long context later")
-
-    text("LongLoRA "), link("https://arxiv.org/pdf/2309.12307")
-    text("- Extends context length of Llama2 7B from 4K to 100K tokens")
-    text("- Use shifted sparse attention (Figure 2), positional interpolation [Chen+ 2023]")
-    text("- Trained on long documents: PG-19 (books) and Proof-Pile (math)")
-
-
-def tasks():
-    text("TL;DR: convert lots of existing NLP datasets into prompts")
-
-    text("Super-Natural Instructions "), link("https://arxiv.org/pdf/2204.07705")
-    text("- Dataset: 1.6K+ tasks (Figure 2)"), named_link("dataset", "https://huggingface.co/datasets/Muennighoff/natural-instructions")
-    text("- Fine-tune T5 on k-shot learning (Tk-instruct)")
-    text("- Tasks contributed by community (via GitHub)")
-    text("- Examples for each task are derived from existing datasets and converted into templatized prompts")
-    text("- Outperforms InstructGPT despite being much smaller(?)")
-
-    text("Flan 2022 "), link("https://arxiv.org/pdf/2301.13688")
-    text("- Dataset: 1.8K+ tasks "), named_link("dataset", "https://huggingface.co/datasets/Muennighoff/flan")
-    text("- Fine-tune T5 on zero-shot, few-shot, chain-of-thought versions of the dataset (Figure 7)")
-
-
-def instruction_chat():
-    text("TL;DR: more open-ended instructions, heavy use of synthetic data")
-
-    text("Alpaca "), link(alpaca)
-    text("- Dataset of 52K examples from text-davinci-003 using self-instruct "), link("https://arxiv.org/pdf/2212.10560")
-    text("- Fine-tune LLaMA 7B on this dataset")
-
-    text("Vicuna "), article_link("https://lmsys.org/blog/2023-03-30-vicuna/")
-    text("- Fine-tuned LLaMA on 70K conversations from [ShareGPT](https://sharegpt.com/) (users sharing their ChatGPT conversations; deprecated now)")
-
-    text("Baize "), link("https://arxiv.org/pdf/2304.01196")
-    text("- Generate dataset (111.5K examples) from GPT-3.5 using self-chat (seeded with Quora and StackOverflow questions)")
-    text("- Fine-tuned LLaMA on this dataset")
-
-    text("WizardLM "), link("https://arxiv.org/pdf/2304.12244")
-    text("- Evol-Instruct dataset ('evolve' questions to increase breadth/difficulty) (Figure 1)")
-    text("- Fine-tuned LLaMA on this dataset")
-
-    text("MAmmoTH2 "), link("https://arxiv.org/pdf/2405.03548")
-    text("- Curated WebInstruct, 10M instructions from Common Crawl")
-    text("- Filter: train fastText classifier on quiz sites")
-    text("- Extract: use GPT-4 and Mixtral to extract QA pairs")
-    text("- Fine-tune Mistral 7B on this data")
-    text("- Boosts math performance")
-
-    text("OpenHermes 2.5")
-    text("- Agglomeration of many datasets "), named_link("dataset", "https://huggingface.co/datasets/teknium/openhermes")
-    text("- Fine-tune Mistral 7B on 1M examples from GPT-4 "), named_link("model", "https://huggingface.co/teknium/OpenHermes-2.5-Mistral-7B")
-
-    text("Llama 2 chat "), link("https://arxiv.org/pdf/2307.09288")
-    text("- 27,540 examples of high-quality instruction data from vendor-based annotations")
-    text("- Said was better than using the millions of examples from open datasets")
-    text("- Could have labeled less data and saved more effort for getting RLHF data")
-
-    text("Llama-Nemotron post-training data [[NVIDIA, 2024](https://huggingface.co/datasets/nvidia/Llama-Nemotron-Post-Training-Dataset)]")
-    text("- Prompts: public datasets (e.g., WildChat) or synthetically-generated, then filtered")
-    text("- Generated synthetic responses from Llama, Mixtral, DeepSeek r1, Qwen (commercially viable, unlike GPT-4)")
-    text("- Included reasoning traces")
-    text("- [Examples](https://huggingface.co/datasets/nvidia/Llama-Nemotron-Post-Training-Dataset/viewer/SFT/code)")
-
-
 def copyright():
     text("Lots of lawsuits around generative AI, mostly around copyright "), article_link("https://www.bakerlaw.com/services/artificial-intelligence-ai/case-tracker-artificial-intelligence-copyrights-and-class-actions/")
 
@@ -585,6 +514,77 @@ def copyright():
     text("- Fair learning [[Lemley & Casey](https://texaslawreview.org/fair-learning/)]")
     text("- Foundation models and fair use "), link("https://arxiv.org/pdf/2303.15715")
     text("- The Files are in the Computer "), link("https://arxiv.org/abs/2404.12590")
+
+
+def long_context():
+    text("Demand for long contexts (want to do QA on books)")
+    text("- DeepSeek v3 has 128K tokens")
+    text("- Claude 3.5 Sonnet has 200K tokens")
+    text("- Gemini 1.5 Pro has 1.5M tokens")
+
+    text("Transformers scales quadratically with sequence length")
+    text("Not efficient to pre-train on long contexts, want to add long context later")
+
+    text("LongLoRA "), link("https://arxiv.org/pdf/2309.12307")
+    text("- Extends context length of Llama2 7B from 4K to 100K tokens")
+    text("- Use shifted sparse attention (Figure 2), positional interpolation [Chen+ 2023]")
+    text("- Trained on long documents: PG-19 (books) and Proof-Pile (math)")
+
+
+def tasks():
+    text("TL;DR: convert lots of existing NLP datasets into prompts")
+
+    text("Super-Natural Instructions "), link("https://arxiv.org/pdf/2204.07705")
+    text("- Dataset: 1.6K+ tasks (Figure 2)"), named_link("dataset", "https://huggingface.co/datasets/Muennighoff/natural-instructions")
+    text("- Fine-tune T5 on k-shot learning (Tk-instruct)")
+    text("- Tasks contributed by community (via GitHub)")
+    text("- Examples for each task are derived from existing datasets and converted into templatized prompts")
+    text("- Outperforms InstructGPT despite being much smaller(?)")
+
+    text("Flan 2022 "), link("https://arxiv.org/pdf/2301.13688")
+    text("- Dataset: 1.8K+ tasks "), named_link("dataset", "https://huggingface.co/datasets/Muennighoff/flan")
+    text("- Fine-tune T5 on zero-shot, few-shot, chain-of-thought versions of the dataset (Figure 7)")
+
+
+def instruction_chat():
+    text("TL;DR: more open-ended instructions, heavy use of synthetic data")
+
+    text("Alpaca "), link(alpaca)
+    text("- Dataset of 52K examples from text-davinci-003 using self-instruct "), link("https://arxiv.org/pdf/2212.10560")
+    text("- Fine-tune LLaMA 7B on this dataset")
+
+    text("Vicuna "), article_link("https://lmsys.org/blog/2023-03-30-vicuna/")
+    text("- Fine-tuned LLaMA on 70K conversations from [ShareGPT](https://sharegpt.com/) (users sharing their ChatGPT conversations; deprecated now)")
+
+    text("Baize "), link("https://arxiv.org/pdf/2304.01196")
+    text("- Generate dataset (111.5K examples) from GPT-3.5 using self-chat (seeded with Quora and StackOverflow questions)")
+    text("- Fine-tuned LLaMA on this dataset")
+
+    text("WizardLM "), link("https://arxiv.org/pdf/2304.12244")
+    text("- Evol-Instruct dataset ('evolve' questions to increase breadth/difficulty) (Figure 1)")
+    text("- Fine-tuned LLaMA on this dataset")
+
+    text("MAmmoTH2 "), link("https://arxiv.org/pdf/2405.03548")
+    text("- Curated WebInstruct, 10M instructions from Common Crawl")
+    text("- Filter: train fastText classifier on quiz sites")
+    text("- Extract: use GPT-4 and Mixtral to extract QA pairs")
+    text("- Fine-tune Mistral 7B on this data")
+    text("- Boosts math performance")
+
+    text("OpenHermes 2.5")
+    text("- Agglomeration of many datasets "), named_link("dataset", "https://huggingface.co/datasets/teknium/openhermes")
+    text("- Fine-tune Mistral 7B on 1M examples from GPT-4 "), named_link("model", "https://huggingface.co/teknium/OpenHermes-2.5-Mistral-7B")
+
+    text("Llama 2 chat "), link("https://arxiv.org/pdf/2307.09288")
+    text("- 27,540 examples of high-quality instruction data from vendor-based annotations")
+    text("- Said was better than using the millions of examples from open datasets")
+    text("- Could have labeled less data and saved more effort for getting RLHF data")
+
+    text("Llama-Nemotron post-training data [[NVIDIA, 2024](https://huggingface.co/datasets/nvidia/Llama-Nemotron-Post-Training-Dataset)]")
+    text("- Prompts: public datasets (e.g., WildChat) or synthetically-generated, then filtered")
+    text("- Generated synthetic responses from Llama, Mixtral, DeepSeek r1, Qwen (commercially viable, unlike GPT-4)")
+    text("- Included reasoning traces")
+    text("- [Examples](https://huggingface.co/datasets/nvidia/Llama-Nemotron-Post-Training-Dataset/viewer/SFT/code)")
 
 
 if __name__ == "__main__":
