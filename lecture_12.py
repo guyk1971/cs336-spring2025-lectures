@@ -6,7 +6,7 @@ def main():
     text("**Evaluation**: given a **fixed model**, how \"**good**\" is it?")
 
     what_you_see()
-    how_to_think_about_evaluation()  
+    how_to_think_about_evaluation()
 
     perplexity()
 
@@ -39,7 +39,7 @@ def what_you_see():
 
     image("images/helm-capabilities-leaderboard.png", width=1000)
     link(title="[HELM capabilities]", url="https://crfm.stanford.edu/helm/capabilities/latest/#/leaderboard")
-    
+
     text("Pay close attention to the costs!")
     image("images/artificial-analysis.png", width=800), link(title="[Artificial Analysis]", url="https://artificialanalysis.ai/")
 
@@ -341,7 +341,7 @@ def validity():
     text("- Machine learning 101: don't train on your test set")
     text("- Pre-foundation models (ImageNet, SQuAD): well-defined train-test splits")
     text("- Nowadays: train on the Internet and don't tell people about your data")
-    
+
     text("Route 1: try to infer train-test overlap from model")
     text("- Exploit exchangeability of data points"), link("https://arxiv.org/pdf/2310.17623")
     image("images/contamination-exchangeability.png", width=600)
@@ -354,7 +354,7 @@ def validity():
     text("- Create Platinum versions of benchmarks"), link("https://arxiv.org/abs/2502.03461")
     image("https://pbs.twimg.com/media/GjICXQlWkAAYnDS?format=jpg&name=4096x4096", width=700)
     image("https://pbs.twimg.com/media/GjICcGQXYAAM4o1?format=jpg&name=4096x4096", width=800)
-    
+
 
 def what_are_we_evaluating():
     text("What are we even evaluating?")
