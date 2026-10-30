@@ -45,8 +45,7 @@ def execute(module: str) -> dict[str, str]:
     os.makedirs("var/traces", exist_ok=True)
 
     result = subprocess.run(
-        ["python", f"{module}.py"],
-        #["python", "-m", "edtrace.execute", "-m", module],
+        ["python", "-m", "edtrace.execute", "-m", module],
         #["uv", "run", "nsys", "profile", "-w", "true", "-t", "cuda,ntvx", "python", "-m", "edtrace.execute", "-m", module],
         stderr=subprocess.PIPE,
         text=True,

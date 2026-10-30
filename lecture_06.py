@@ -49,10 +49,11 @@ def review_of_gpus():
     text("| HBM size                           |     80 GB |     80 GB |    192 GB |", verbatim=True)
     text("+------------------------------------+-----------+-----------+-----------+", verbatim=True)
     text("| Register bandwidth                 | ~116 TB/s | ~401 TB/s | ~447 TB/s |", verbatim=True)
-    text("| L1 cache + shared memory bandwidth |  ~19 TB/s |  ~33 TB/s |  ~19 TB/s |", verbatim=True)
-    text("| L2 cache bandwidth                 | ~5-8 TB/s |  ~12 TB/s |   ~9 TB/s |", verbatim=True)
+    text("| L1 cache + shared memory bandwidth |  ~19 TB/s |  ~33 TB/s |  ~40 TB/s |", verbatim=True)
+    text("| L2 cache bandwidth                 | ~5-8 TB/s |  ~12 TB/s |  ~17 TB/s |", verbatim=True)
     text("| HBM bandwidth                      |    2 TB/s | 3.35 TB/s |    8 TB/s |", verbatim=True)
 
+    text("Note: the L1/L2 bandwidth numbers are rough estimates (online sources differ).")
     text("(B200s also have tensor memory (TMEM) for tensor cores (between registers and shared memory) that are invisible to programmer.)")
 
     text("## Programming model")
